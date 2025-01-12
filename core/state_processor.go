@@ -229,7 +229,11 @@ func ApplyTransactionExtended(config *params.ChainConfig, bc ChainContext, autho
 	blockContext := NewEVMBlockContext(header, bc, author, config, statedb)
 	txContext := NewEVMTxContext(msg)
 	vmenv := vm.NewEVM(blockContext, txContext, statedb, config, cfg)
-	return ApplyTransactionWithEVM(msg, config, gp, statedb, header.Number, header.Hash(), tx, usedGas, vmenv)
+	blockHash := common.Hash{}
+	if header.Root != (common.Hash{}) { // if the header is sealed, then hydrate the receipt with it. If not, then blockhash is still changing, not worth computing.
+		blockHash = header.Hash()
+	}
+	return ApplyTransactionWithEVM(msg, config, gp, statedb, header.Number, blockHash, tx, usedGas, vmenv)
 }
 
 // ProcessBeaconBlockRoot applies the EIP-4788 system call to the beacon block root

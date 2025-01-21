@@ -30,6 +30,25 @@ var (
 	_      = types.TrieHasher((*StackTrie)(nil))
 )
 
+// PreHashStackTrie is a StackTrie where each inserted node is already hashed.
+// This assumes each actual leaf is larger than 32 bytes and is thus meant to be hashed as MPT value.
+type PreHashStackTrie struct {
+	*StackTrie
+}
+
+func (t *PreHashStackTrie) Update(key, value []byte) error {
+	if len(value) != 32 {
+		return errors.New("expected pre-hashed value")
+	}
+	return t.StackTrie.Update(key, value)
+}
+
+func NewPreHashStackTrie() *StackTrie {
+	t := NewStackTrie(nil)
+	t.preHashedLeafs = true
+	return t
+}
+
 // OnTrieNode is a callback method invoked when a trie node is committed
 // by the stack trie. The node is only committed if it's considered complete.
 //
@@ -47,6 +66,8 @@ type StackTrie struct {
 	h          *hasher
 	last       []byte
 	onTrieNode OnTrieNode
+
+	preHashedLeafs bool // true if leaf nodes are inserted as 32-byte hashes
 }
 
 // NewStackTrie allocates and initializes an empty trie. The committed nodes
@@ -101,9 +122,15 @@ type stNode struct {
 // newLeaf constructs a leaf node with provided node key and value. The key
 // will be deep-copied in the function and safe to modify afterwards, but
 // value is not.
-func newLeaf(key, val []byte) *stNode {
+func newLeaf(key, val []byte, preHashed bool) *stNode {
 	st := stPool.Get().(*stNode)
 	st.typ = leafNode
+	if preHashed {
+		if len(val) != 32 {
+			panic("cannot register non-32 byte values as pre-hashed nodes")
+		}
+		st.typ = hashedNode
+	}
 	st.key = append(st.key, key...)
 	st.val = val
 	return st
@@ -169,7 +196,7 @@ func (t *StackTrie) insert(st *stNode, key, value []byte, path []byte) {
 
 		// Add new child
 		if st.children[idx] == nil {
-			st.children[idx] = newLeaf(key[1:], value)
+			st.children[idx] = newLeaf(key[1:], value, t.preHashedLeafs)
 		} else {
 			t.insert(st.children[idx], key[1:], value, append(path, key[0]))
 		}
@@ -225,7 +252,7 @@ func (t *StackTrie) insert(st *stNode, key, value []byte, path []byte) {
 			p = st.children[0]
 		}
 		// Create a leaf for the inserted part
-		o := newLeaf(key[diffidx+1:], value)
+		o := newLeaf(key[diffidx+1:], value, t.preHashedLeafs)
 
 		// Insert both child leaves where they belong:
 		origIdx := st.key[diffidx]
@@ -270,11 +297,11 @@ func (t *StackTrie) insert(st *stNode, key, value []byte, path []byte) {
 		// value and another containing the new value. The child leaf
 		// is hashed directly in order to free up some memory.
 		origIdx := st.key[diffidx]
-		p.children[origIdx] = newLeaf(st.key[diffidx+1:], st.val)
+		p.children[origIdx] = newLeaf(st.key[diffidx+1:], st.val, t.preHashedLeafs)
 		t.hash(p.children[origIdx], append(path, st.key[:diffidx+1]...))
 
 		newIdx := key[diffidx]
-		p.children[newIdx] = newLeaf(key[diffidx+1:], value)
+		p.children[newIdx] = newLeaf(key[diffidx+1:], value, t.preHashedLeafs)
 
 		// Finally, cut off the key part that has been passed
 		// over to the children.

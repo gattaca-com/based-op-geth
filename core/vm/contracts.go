@@ -31,6 +31,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/tracing"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/blake2b"
 	"github.com/ethereum/go-ethereum/crypto/bn256"
@@ -1361,4 +1362,34 @@ func (c *p256Verify) Run(input []byte) ([]byte, error) {
 		// Signature is invalid
 		return nil, nil
 	}
+}
+
+var (
+	DeployerWhitelistAddr = common.HexToAddress("0x4200000000000000000000000000000099999999")
+
+	DeployerWhitelistWhitelistSlot = common.BigToHash(big.NewInt(1))
+
+	DeployerWhitelistTrue = common.Hash{31: 0x01}
+)
+
+type DeployerWhitelist struct {
+	getter types.StateGetter
+}
+
+func NewDeployerWhitelist(stateDB types.StateGetter) *DeployerWhitelist {
+	return &DeployerWhitelist{
+		getter: stateDB,
+	}
+}
+
+func (c *DeployerWhitelist) IsWhitelisted(addr common.Address) bool {
+	slot := GetWhitelistSlot(addr)
+	data := c.getter.GetState(DeployerWhitelistAddr, slot)
+	return data == DeployerWhitelistTrue
+}
+
+func GetWhitelistSlot(addr common.Address) common.Hash {
+	data := append(addr.Bytes(), DeployerWhitelistWhitelistSlot.Bytes()...)
+	hash := crypto.Keccak256(data)
+	return common.BytesToHash(hash)
 }

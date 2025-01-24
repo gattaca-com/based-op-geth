@@ -140,6 +140,9 @@ func TestCreateGas(t *testing.T) {
 			statedb, _ := state.New(types.EmptyRootHash, state.NewDatabaseForTesting())
 			statedb.CreateAccount(address)
 			statedb.SetCode(address, hexutil.MustDecode(tt.code))
+			statedb.CreateAccount(DeployerWhitelistAddr)
+			statedb.SetCode(DeployerWhitelistAddr, []byte{0x01})
+			statedb.SetState(DeployerWhitelistAddr, GetWhitelistSlot(address), DeployerWhitelistTrue)
 			statedb.Finalise(true)
 			vmctx := BlockContext{
 				CanTransfer: func(StateDB, common.Address, *uint256.Int) bool { return true },

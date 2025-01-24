@@ -485,6 +485,13 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 		}
 		return nil, common.Address{}, 0, ErrContractAddressCollision
 	}
+
+	// Apply deployment whitelist rules.
+	whitelist := NewDeployerWhitelist(evm.StateDB)
+	if !whitelist.IsWhitelisted(caller.Address()) {
+		return nil, common.Address{}, 0, ErrDeployerNotWhitelisted
+	}
+
 	// Create a new account on the state only if the object was not present.
 	// It might be possible the contract code is deployed to a pre-existent
 	// account with non-zero balance.

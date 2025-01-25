@@ -26,6 +26,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/stretchr/testify/require"
 )
 
 // precompiledTest defines the input/output pairs for precompiled contract tests.
@@ -421,3 +422,11 @@ func BenchmarkPrecompiledP256Verify(bench *testing.B) {
 }
 
 func TestPrecompiledP256Verify(t *testing.T) { testJson("p256Verify", "100", t) }
+
+func TestGetWhitelistSlot(t *testing.T) {
+	require.Equal(
+		t,
+		common.HexToHash("0xd55eee481fe9c49d7703e1526c33e6ebb233b31cb5bd3c59d15c9e7f7347dd70"),
+		GetWhitelistSlot(common.HexToAddress("0xCFf7a9856DB3C60AB546b8F43dC5D1A4336786A0")),
+	)
+}

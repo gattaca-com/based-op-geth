@@ -1389,7 +1389,9 @@ func (c *DeployerWhitelist) IsWhitelisted(addr common.Address) bool {
 }
 
 func GetWhitelistSlot(addr common.Address) common.Hash {
-	data := append(addr.Bytes(), DeployerWhitelistWhitelistSlot.Bytes()...)
+	data := make([]byte, 32)
+	copy(data[12:], addr.Bytes())
+	data = append(data, DeployerWhitelistWhitelistSlot.Bytes()...)
 	hash := crypto.Keccak256(data)
 	return common.BytesToHash(hash)
 }

@@ -403,19 +403,18 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 		return chainCfg, block.Hash(), nil, nil
 	}
 
-	// TODO: Reinstate transitioned network check. Not sure where exactly to put it after this refactor.
-	// If the bedrock block is not 0, that implies that the network was migrated at the bedrock block.
-	// In this case the genesis state may not be in the state database (e.g. op-geth is performing a snap
-	// sync without an existing datadir) & even if it were, would not be useful as op-geth is not able to
-	// execute the pre-bedrock STF.
-	// transitionedNetwork := genesis != nil && genesis.Config != nil && genesis.Config.BedrockBlock != nil && genesis.Config.BedrockBlock.Uint64() != 0
+	// OP-Stack note: if it's a bedrock-transition genesis,
+	// then only commit to DB if it has a StateHash to work with,
+	// as the genesis config accounts map will not be usable.
+	transitionedNetwork := genesis != nil && genesis.Config != nil && genesis.Config.BedrockBlock != nil && genesis.Config.BedrockBlock.Uint64() != 0
+	canCommitGenesis := !transitionedNetwork || genesis.StateHash != nil
 
 	// Commit the genesis if the genesis block exists in the ancient database
 	// but the key-value database is empty without initializing the genesis
 	// fields. This scenario can occur when the node is created from scratch
 	// with an existing ancient store.
 	storedCfg := rawdb.ReadChainConfig(db, ghash)
-	if storedCfg == nil {
+	if storedCfg == nil && canCommitGenesis {
 		// Ensure the stored genesis block matches with the given genesis. Private
 		// networks must explicitly specify the genesis in the config file, mainnet
 		// genesis will be used as default and the initialization will always fail.
@@ -440,7 +439,6 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 		}
 		return chainCfg, block.Hash(), nil, nil
 	}
-	log.Info("Stored config", "cfg", storedCfg, "genesis-nil", genesis == nil)
 	// The genesis block has already been committed previously. Verify that the
 	// provided genesis with chain overrides matches the existing one, and update
 	// the stored chain config if necessary.
@@ -455,20 +453,34 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 			return nil, common.Hash{}, nil, &GenesisMismatchError{ghash, hash}
 		}
 	}
+
 	// Check config compatibility and write the config. Compatibility errors
 	// are returned to the caller unless we're already at block zero.
 	head := rawdb.ReadHeadHeader(db)
 	if head == nil {
 		return nil, common.Hash{}, nil, errors.New("missing head header")
 	}
+
+	// OP-Stack warning: tricky upstream code: method with nil-receiver case.
+	// Returns genesis.Config if genesis is not nil. Falls back to storedCfg otherwise. And some special L1 cases.
 	newCfg := genesis.chainConfigOrDefault(ghash, storedCfg)
+
+	// OP-Stack note: geth used to have a "Special case" for private networks,
+	// where it would set newCfg to storedCfg if genesis was nil. That is implied now in chainConfigOrDefault.
+	// However, a possible upstream bug means that overrides are not always applied to this new config.
+	// Always apply overrides.
+	chainCfg, err := overrides.apply(newCfg)
+	if err != nil {
+		return nil, common.Hash{}, nil, err
+	}
+	newCfg = chainCfg
 
 	log.Info("New config", "cfg", newCfg, "genesis-nil", genesis == nil)
 	var genesisTimestamp *uint64
 	if genesis != nil {
 		genesisTimestamp = &genesis.Timestamp
 	}
-
+	// OP-Stack diff: provide genesis timestamp (may be nil), to check bedrock-migration compat with config.
 	// TODO(rjl493456442) better to define the comparator of chain config
 	// and short circuit if the chain config is not changed.
 	compatErr := storedCfg.CheckCompatible(newCfg, head.Number.Uint64(), head.Time, genesisTimestamp)
@@ -480,10 +492,12 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 	// for the scenarios that database is opened in the read-only mode.
 	storedData, _ := json.Marshal(storedCfg)
 	if newData, _ := json.Marshal(newCfg); !bytes.Equal(storedData, newData) {
-		log.Info("Configs differ")
+		log.Info("Chain configs differ, overwriting stored config with new config.")
+		log.Info("Previously stored chain config", "json", string(storedData))
+		log.Info("New chain config", "json", string(newData), "genesis-nil", genesis == nil)
 		rawdb.WriteChainConfig(db, ghash, newCfg)
 	} else {
-		log.Info("Configs equal")
+		log.Info("Configured chain config matches existing chain config in storage.")
 	}
 	return newCfg, ghash, nil, nil
 }

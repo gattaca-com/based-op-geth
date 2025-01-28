@@ -19,7 +19,6 @@ package usbwallet
 import (
 	"errors"
 	"runtime"
-	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -49,7 +48,7 @@ type Hub struct {
 	scheme     string                  // Protocol scheme prefixing account and wallet URLs.
 	vendorID   uint16                  // USB vendor identifier used for device discovery
 	productIDs []uint16                // USB product identifiers used for device discovery
-	usageIDs   []uint16                // USB usage page identifier used for macOS device discovery
+	usageID    uint16                  // USB usage page identifier used for macOS device discovery
 	endpointID int                     // USB endpoint identifier used for non-macOS device discovery
 	makeDriver func(log.Logger) driver // Factory method to construct a vendor specific driver
 
@@ -90,22 +89,22 @@ func NewLedgerHub() (*Hub, error) {
 		0x5000, /* WebUSB Ledger Nano S Plus */
 		0x6000, /* WebUSB Ledger Nano FTS */
 		0x7000, /* WebUSB Ledger Flex */
-	}, []uint16{0xffa0, 0}, 2, newLedgerDriver)
+	}, 0xffa0, 0, newLedgerDriver)
 }
 
 // NewTrezorHubWithHID creates a new hardware wallet manager for Trezor devices.
 func NewTrezorHubWithHID() (*Hub, error) {
-	return newHub(TrezorScheme, 0x534c, []uint16{0x0001 /* Trezor HID */}, []uint16{0xff00}, 0, newTrezorDriver)
+	return newHub(TrezorScheme, 0x534c, []uint16{0x0001 /* Trezor HID */}, 0xff00, 0, newTrezorDriver)
 }
 
 // NewTrezorHubWithWebUSB creates a new hardware wallet manager for Trezor devices with
 // firmware version > 1.8.0
 func NewTrezorHubWithWebUSB() (*Hub, error) {
-	return newHub(TrezorScheme, 0x1209, []uint16{0x53c1 /* Trezor WebUSB */}, []uint16{0xffff} /* No usage id on webusb, don't match unset (0) */, 0, newTrezorDriver)
+	return newHub(TrezorScheme, 0x1209, []uint16{0x53c1 /* Trezor WebUSB */}, 0xffff /* No usage id on webusb, don't match unset (0) */, 0, newTrezorDriver)
 }
 
 // newHub creates a new hardware wallet manager for generic USB devices.
-func newHub(scheme string, vendorID uint16, productIDs []uint16, usageIDs []uint16, endpointID int, makeDriver func(log.Logger) driver) (*Hub, error) {
+func newHub(scheme string, vendorID uint16, productIDs []uint16, usageID uint16, endpointID int, makeDriver func(log.Logger) driver) (*Hub, error) {
 	if !hid.Supported() {
 		return nil, errors.New("unsupported platform")
 	}
@@ -113,7 +112,7 @@ func newHub(scheme string, vendorID uint16, productIDs []uint16, usageIDs []uint
 		scheme:     scheme,
 		vendorID:   vendorID,
 		productIDs: productIDs,
-		usageIDs:   usageIDs,
+		usageID:    usageID,
 		endpointID: endpointID,
 		makeDriver: makeDriver,
 		quit:       make(chan chan error),
@@ -186,10 +185,7 @@ func (hub *Hub) refreshWallets() {
 			// uses `MMII`, encoding a model (MM) and an interface bitfield (II)
 			mmOnly := info.ProductID & 0xff00
 			// Windows and Macos use UsageID matching, Linux uses Interface matching
-			if (info.ProductID == id || mmOnly == id) &&
-				// TODO: we had the following check in op-geth only, ok to remove?
-				// info.Path != "" &&
-				(slices.Contains(hub.usageIDs, info.UsagePage) || info.Interface == hub.endpointID) {
+			if (info.ProductID == id || mmOnly == id) && (info.UsagePage == hub.usageID || info.Interface == hub.endpointID) {
 				devices = append(devices, info)
 				break
 			}

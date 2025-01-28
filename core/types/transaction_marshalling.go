@@ -206,7 +206,6 @@ func (tx *Transaction) MarshalJSON() ([]byte, error) {
 		enc.Nonce = (*hexutil.Uint64)(&itx.EffectiveNonce)
 		// other fields will show up as null.
 	}
-
 	return json.Marshal(&enc)
 }
 
@@ -591,7 +590,6 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 		if dec.Nonce != nil {
 			inner = &depositTxWithNonce{DepositTx: itx, EffectiveNonce: uint64(*dec.Nonce)}
 		}
-
 	default:
 		return ErrTxTypeNotSupported
 	}

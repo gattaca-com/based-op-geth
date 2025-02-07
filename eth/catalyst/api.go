@@ -113,6 +113,8 @@ var caps = []string{
 	"engine_getPayloadBodiesByRangeV1",
 	"engine_getPayloadBodiesByRangeV2",
 	"engine_getClientVersionV1",
+	"engine_newFragV0",
+	"engine_sealFragV0",
 }
 
 type ConsensusAPI struct {
@@ -156,6 +158,9 @@ type ConsensusAPI struct {
 
 	forkchoiceLock sync.Mutex // Lock for the forkChoiceUpdated method
 	newPayloadLock sync.Mutex // Lock for the NewPayload method
+
+	newFragLock  sync.Mutex // Lock for the NewFrag method
+	sealFragLock sync.Mutex // Lock for the SealFrag method
 }
 
 // NewConsensusAPI creates a new consensus api for the given backend.
@@ -1336,5 +1341,29 @@ func validateRequests(requests [][]byte) error {
 			return fmt.Errorf("invalid request order: %v", req)
 		}
 	}
+	return nil
+}
+
+// TODO: We must define the responses for the following methods
+
+func (api *ConsensusAPI) NewFragV0(frag engine.SignedNewFrag) error {
+	// TODO: Perform validations
+	return api.newFragV0(frag)
+}
+
+func (api *ConsensusAPI) newFragV0(frag engine.SignedNewFrag) error {
+	// TODO: Implement
+	log.Info("(api *ConsensusAPI) newFragV0", frag)
+	return nil
+}
+
+func (api *ConsensusAPI) SealFragV0(frag engine.SignedSeal) error {
+	// TODO: Perform validations
+	return api.sealFragV0(frag)
+}
+
+func (api *ConsensusAPI) sealFragV0(frag engine.SignedSeal) error {
+	// TODO: Implement
+	log.Info("(api *ConsensusAPI) sealFragV0", frag)
 	return nil
 }

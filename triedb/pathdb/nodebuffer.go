@@ -215,7 +215,7 @@ func (b *nodebuffer) allocBatch(db ethdb.KeyValueStore) ethdb.Batch {
 // flush persists the in-memory dirty trie node into the disk if the configured
 // memory threshold is reached. Note, all data must be written atomically.
 func (b *nodebuffer) flush(db ethdb.KeyValueStore, clean *fastcache.Cache, id uint64, force bool) error {
-	if b.size <= b.limit && !force {
+	if b.size <= b.limit && b.layers < uint64(maxDiffLayers) && !force {
 		return nil
 	}
 	// Ensure the target state id is aligned with the internal counter.

@@ -784,6 +784,10 @@ func (b testBackend) Genesis() *types.Block {
 	panic("implement me")
 }
 
+func (b testBackend) GetUnsealedBlock() *types.UnsealedBlock {
+	panic("implement me")
+}
+
 func TestEstimateGas(t *testing.T) {
 	t.Parallel()
 	// Initialize test accounts

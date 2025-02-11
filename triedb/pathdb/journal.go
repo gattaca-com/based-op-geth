@@ -372,9 +372,9 @@ func (db *Database) Journal(root common.Hash) error {
 	}
 	disk := db.tree.bottom()
 	if l, ok := l.(*diffLayer); ok {
-		log.Info("Persisting dirty state to disk", "head", l.block, "root", root, "layers", l.id-disk.id+disk.buffer.layers)
+		log.Info("Persisting dirty state to disk", "head", l.block, "root", root, "layers", l.id-disk.id+disk.buffer.layers, "buffer_layers", disk.buffer.layers)
 	} else { // disk layer only on noop runs (likely) or deep reorgs (unlikely)
-		log.Info("Persisting dirty state to disk", "root", root, "layers", disk.buffer.layers)
+		log.Info("Persisting dirty state to disk", "root", root, "buffer_layers", disk.buffer.layers)
 	}
 	start := time.Now()
 

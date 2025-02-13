@@ -56,11 +56,9 @@ const (
 	txMaxSize = 4 * txSlotSize // 128KB
 )
 
-var (
-	// ErrTxPoolOverflow is returned if the transaction pool is full and can't accept
-	// another remote transaction.
-	ErrTxPoolOverflow = errors.New("txpool is full")
-)
+// ErrTxPoolOverflow is returned if the transaction pool is full and can't accept
+// another remote transaction.
+var ErrTxPoolOverflow = errors.New("txpool is full")
 
 var (
 	evictionInterval    = time.Minute     // Time interval to check for evictable transactions
@@ -518,7 +516,9 @@ func (pool *LegacyPool) Pending(filter txpool.PendingFilter) map[common.Address]
 				}
 			}
 		}
-		if filter.MaxDATxSize != nil && !pool.locals.contains(addr) {
+
+		// OP-Stack addition: exclude by max-da-size filter
+		if filter.MaxDATxSize != nil {
 			for i, tx := range txs {
 				estimate := tx.RollupCostData().EstimatedDASize()
 				if estimate.Cmp(filter.MaxDATxSize) > 0 {
@@ -565,9 +565,6 @@ func (pool *LegacyPool) validateTxBasics(tx *types.Transaction) error {
 		MaxSize:          txMaxSize,
 		MinTip:           pool.gasTip.Load().ToBig(),
 		EffectiveGasCeil: pool.config.EffectiveGasCeil,
-	}
-	if local {
-		opts.MinTip = new(big.Int)
 	}
 	if err := txpool.ValidateTransaction(tx, pool.currentHead.Load(), pool.signer, opts); err != nil {
 		return err
@@ -920,7 +917,7 @@ func (pool *LegacyPool) Add(txs []*types.Transaction, sync bool) []error {
 	newErrs, dirtyAddrs := pool.addTxsLocked(news)
 	pool.mu.Unlock()
 
-	var nilSlot = 0
+	nilSlot := 0
 	for _, err := range newErrs {
 		for errs[nilSlot] != nil {
 			nilSlot++
@@ -1417,7 +1414,7 @@ func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.T
 		queuedGauge.Dec(int64(len(readies)))
 
 		// Drop all transactions over the allowed limit
-		var caps = list.Cap(int(pool.config.AccountQueue))
+		caps := list.Cap(int(pool.config.AccountQueue))
 		for _, tx := range caps {
 			hash := tx.Hash()
 			pool.all.Remove(hash)

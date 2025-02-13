@@ -132,20 +132,20 @@ func (beacon *Beacon) VerifyHeader(chain consensus.ChainHeaderReader, header *ty
 // OP-Stack Bedrock variant of splitHeaders: the total-terminal difficulty is terminated at bedrock transition, but also reset to 0.
 // So just use the bedrock fork check to split the headers, to simplify the splitting.
 // The returned slices are slices over the input. The input must be sorted.
-func (beacon *Beacon) splitBedrockHeaders(chain consensus.ChainHeaderReader, headers []*types.Header) ([]*types.Header, []*types.Header, error) {
+func (beacon *Beacon) splitBedrockHeaders(chain consensus.ChainHeaderReader, headers []*types.Header) ([]*types.Header, []*types.Header) {
 	for i, h := range headers {
 		if chain.Config().IsBedrock(h.Number) {
-			return headers[:i], headers[i:], nil
+			return headers[:i], headers[i:]
 		}
 	}
-	return headers, nil, nil
+	return headers, nil
 }
 
 // splitHeaders splits the provided header batch into two parts according to
 // the difficulty field.
 //
 // Note, this function will not verify the header validity but just split them.
-func (beacon *Beacon) splitHeaders(headers []*types.Header) ([]*types.Header, []*types.Header) {
+func (beacon *Beacon) splitHeaders(chain consensus.ChainHeaderReader, headers []*types.Header) ([]*types.Header, []*types.Header) {
 	if chain.Config().Optimism != nil {
 		return beacon.splitBedrockHeaders(chain, headers)
 	}
@@ -169,7 +169,7 @@ func (beacon *Beacon) splitHeaders(headers []*types.Header) ([]*types.Header, []
 // a results channel to retrieve the async verifications.
 // VerifyHeaders expect the headers to be ordered and continuous.
 func (beacon *Beacon) VerifyHeaders(chain consensus.ChainHeaderReader, headers []*types.Header) (chan<- struct{}, <-chan error) {
-	preHeaders, postHeaders := beacon.splitHeaders(headers)
+	preHeaders, postHeaders := beacon.splitHeaders(chain, headers)
 	if len(postHeaders) == 0 {
 		return beacon.ethone.VerifyHeaders(chain, headers)
 	}

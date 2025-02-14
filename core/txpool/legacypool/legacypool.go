@@ -478,6 +478,23 @@ func (pool *LegacyPool) ContentFrom(addr common.Address) ([]*types.Transaction, 
 	return pending, queued
 }
 
+// ToJournal returns all transactions in the pool in a format suitable for journaling.
+//
+// OP-Stack addition.
+func (pool *LegacyPool) ToJournal() map[common.Address]types.Transactions {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	txs := make(map[common.Address]types.Transactions, len(pool.pending)+len(pool.queue))
+	for addr, pending := range pool.pending {
+		txs[addr] = pending.Flatten()
+	}
+	for addr, queued := range pool.queue {
+		txs[addr] = append(txs[addr], queued.Flatten()...)
+	}
+	return txs
+}
+
 // Pending retrieves all currently processable transactions, grouped by origin
 // account and sorted by nonce.
 //

@@ -122,8 +122,11 @@ func (beacon *Beacon) VerifyHeader(chain consensus.ChainHeaderReader, header *ty
 	if parent.Difficulty.Sign() == 0 && header.Difficulty.Sign() > 0 {
 		return consensus.ErrInvalidTerminalBlock
 	}
+	cfg := chain.Config()
 	// Check >0 TDs with pre-merge, --0 TDs with post-merge rules
-	if header.Difficulty.Sign() > 0 {
+	if header.Difficulty.Sign() > 0 ||
+		// OP-Stack: transitioned networks must use legacy consensus pre-Bedrock
+		cfg.IsOptimism() && !cfg.IsBedrock(header.Number) {
 		return beacon.ethone.VerifyHeader(chain, header)
 	}
 	return beacon.verifyHeader(chain, header, parent)

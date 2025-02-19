@@ -67,6 +67,7 @@ func (pj *PoolJournaler) Stop() error {
 }
 
 func (pj *PoolJournaler) loop() {
+	defer log.Info("PoolJournaler: Stopped")
 	defer pj.wg.Done()
 
 	start := time.Now()
@@ -82,17 +83,26 @@ func (pj *PoolJournaler) loop() {
 	}
 	defer pj.journal.close()
 
-	timer := time.NewTimer(pj.rejournal)
+	ticker := time.NewTicker(pj.rejournal)
+	defer ticker.Stop()
+
+	journal := func() {
+		start := time.Now()
+		tojournal := pj.pool.ToJournal()
+		if err := pj.journal.rotate(tojournal); err != nil {
+			log.Error("PoolJournaler: Transaction journal rotation failed", "err", err)
+		} else {
+			log.Debug("PoolJournaler: Transaction journal rotated", "count", len(tojournal), "duration", time.Since(start))
+		}
+	}
 
 	for {
 		select {
 		case <-pj.shutdownCh:
+			journal()
 			return
-		case <-timer.C:
-			tojournal := pj.pool.ToJournal()
-			if err := pj.journal.rotate(tojournal); err != nil {
-				log.Warn("PoolJournaler: Transaction journal rotation failed", "err", err)
-			}
+		case <-ticker.C:
+			journal()
 		}
 	}
 }

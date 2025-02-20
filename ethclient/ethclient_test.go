@@ -245,7 +245,10 @@ func generateTestChain(genesis *core.Genesis, length int) []*types.Block {
 }
 
 func TestEthClientHistoricalBackend(t *testing.T) {
-	backend, _, _ := newTestBackend(t, nil, true)
+	backend, _, err := newTestBackend(t, nil, true)
+	if err != nil {
+		t.Fatal(err)
+	}
 	client := backend.Attach()
 	defer backend.Close()
 	defer client.Close()

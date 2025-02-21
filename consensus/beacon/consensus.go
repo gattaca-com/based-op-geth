@@ -149,7 +149,7 @@ func (beacon *Beacon) splitBedrockHeaders(chain consensus.ChainHeaderReader, hea
 //
 // Note, this function will not verify the header validity but just split them.
 func (beacon *Beacon) splitHeaders(chain consensus.ChainHeaderReader, headers []*types.Header) ([]*types.Header, []*types.Header) {
-	if chain.Config().Optimism != nil {
+	if chain.Config().IsOptimism() {
 		return beacon.splitBedrockHeaders(chain, headers)
 	}
 
@@ -494,7 +494,7 @@ func (beacon *Beacon) CalcDifficulty(chain consensus.ChainHeaderReader, time uin
 	cfg := chain.Config()
 	if beacon.ttdblock != nil && *beacon.ttdblock > parent.Number.Uint64() ||
 		// OP-Stack: transitioned networks must use legacy consensus pre-Bedrock
-		(cfg.IsOptimism() && !cfg.IsBedrock(big.NewInt(int64(time)))) {
+		(cfg.IsOptimism() && !cfg.IsBedrock(new(big.Int).Add(parent.Number, common.Big1))) {
 		return beacon.ethone.CalcDifficulty(chain, time, parent)
 	}
 	return beaconDifficulty

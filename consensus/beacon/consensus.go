@@ -472,7 +472,9 @@ func (beacon *Beacon) SealHash(header *types.Header) common.Hash {
 // the difficulty that a new block should have when created at time
 // given the parent block's time and difficulty.
 func (beacon *Beacon) CalcDifficulty(chain consensus.ChainHeaderReader, time uint64, parent *types.Header) *big.Int {
-	if !isPostMerge(chain.Config(), parent.Number.Uint64()+1, time) {
+	if !isPostMerge(chain.Config(), parent.Number.Uint64()+1, time) ||
+		// OP-Stack: transitioned networks must use legacy consensus pre-Bedrock
+		(chain.Config().IsOptimism() && !chain.Config().IsBedrock(new(big.Int).Add(parent.Number, common.Big1))) {
 		return beacon.ethone.CalcDifficulty(chain, time, parent)
 	}
 	return beaconDifficulty

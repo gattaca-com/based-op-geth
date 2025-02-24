@@ -490,7 +490,6 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 	if genesis != nil {
 		genesisTimestamp = &genesis.Timestamp
 	}
-
 	// OP-Stack diff: provide genesis timestamp (may be nil), to check bedrock-migration compat with config.
 	// TODO(rjl493456442) better to define the comparator of chain config
 	// and short circuit if the chain config is not changed.

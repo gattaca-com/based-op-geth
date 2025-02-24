@@ -1756,7 +1756,6 @@ type lookup struct {
 	slots int
 	lock  sync.RWMutex
 	txs   map[common.Hash]*types.Transaction
-
 	auths map[common.Address][]common.Hash // All accounts with a pooled authorization
 }
 

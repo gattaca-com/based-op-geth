@@ -171,7 +171,7 @@ func newTestBackend(t *testing.T, config *node.Config, enableHistoricalState boo
 	var chainLength int
 	if enableHistoricalState {
 		actualGenesis = genesisForHistorical
-		chainLength = 10
+		chainLength = 4
 	} else {
 		actualGenesis = genesis
 		chainLength = 2

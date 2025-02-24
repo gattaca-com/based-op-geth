@@ -90,6 +90,17 @@ func TestCalcBlobFee(t *testing.T) {
 	}
 }
 
+func TestCalcBlobFeeOPStack(t *testing.T) {
+	zero := uint64(0)
+	header := &types.Header{ExcessBlobGas: &zero}
+	// any non-nil optimism confic should do
+	config := &params.ChainConfig{Optimism: new(params.OptimismConfig)}
+	bfee := CalcBlobFee(config, header)
+	if bfee.Int64() != 1 {
+		t.Errorf("OP-Stack blobfee mismatch: have %v want 1", bfee)
+	}
+}
+
 func TestFakeExponential(t *testing.T) {
 	tests := []struct {
 		factor      int64

@@ -482,10 +482,7 @@ func (beacon *Beacon) CalcDifficulty(chain consensus.ChainHeaderReader, time uin
 	// We do not need to seal non-merge blocks anymore live, but we do need
 	// to be able to generate test chains, thus we're reverting to a testing-
 	// settable field to direct that.
-	cfg := chain.Config()
-	if !isPostMerge(cfg, parent.Number.Uint64()+1, time) ||
-		// OP-Stack: transitioned networks must use legacy consensus pre-Bedrock
-		(cfg.IsOptimism() && !cfg.IsBedrock(new(big.Int).Add(parent.Number, common.Big1))) {
+	if !isPostMerge(chain.Config(), parent.Number.Uint64()+1, time) {
 		return beacon.ethone.CalcDifficulty(chain, time, parent)
 	}
 	return beaconDifficulty

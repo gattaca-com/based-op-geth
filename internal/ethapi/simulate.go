@@ -81,6 +81,21 @@ type simBlockResult struct {
 	Calls       []simCallResult
 }
 
+type nullReceiptGetter struct{}
+
+func (nullReceiptGetter) GetReceipts(context.Context, common.Hash) (types.Receipts, error) {
+	return nil, nil
+}
+
+func (r *simBlockResult) MarshalJSON() ([]byte, error) {
+	blockData, err := RPCMarshalBlock(context.Background(), r.Block, true, r.fullTx, r.chainConfig, nullReceiptGetter{})
+	if err != nil {
+		return nil, err
+	}
+	blockData["calls"] = r.Calls
+	return json.Marshal(blockData)
+}
+
 // simOpts are the inputs to eth_simulateV1.
 type simOpts struct {
 	BlockStateCalls        []simBlock

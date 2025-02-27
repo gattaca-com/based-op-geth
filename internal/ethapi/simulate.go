@@ -81,10 +81,13 @@ type simBlockResult struct {
 	Calls       []simCallResult
 }
 
+// nulllReceiptGetter is a dummy receipt getter that panics when called.
+// It is used to stub out behaviour specific to the OPStack, so that
+// simBlockResult.MarshalJSON can use the OPStack RPCMarshalBlock function.
 type nullReceiptGetter struct{}
 
 func (nullReceiptGetter) GetReceipts(context.Context, common.Hash) (types.Receipts, error) {
-	return nil, nil
+	panic("OPStack: not implemented")
 }
 
 func (r *simBlockResult) MarshalJSON() ([]byte, error) {

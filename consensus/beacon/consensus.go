@@ -82,7 +82,7 @@ func isPostMerge(config *params.ChainConfig, blockNum uint64, timestamp uint64) 
 		config.MergeNetsplitBlock != nil && blockNum >= config.MergeNetsplitBlock.Uint64() ||
 		config.ShanghaiTime != nil && timestamp >= *config.ShanghaiTime ||
 		// If OP-Stack then bedrock activation number determines when TTD (eth Merge) has been reached.
-		config.Optimism != nil && config.IsBedrock(new(big.Int).SetUint64(blockNum))
+		config.IsOptimismBedrock(new(big.Int).SetUint64(blockNum))
 }
 
 // Author implements consensus.Engine, returning the verified author of the block.
@@ -125,7 +125,7 @@ func (beacon *Beacon) VerifyHeader(chain consensus.ChainHeaderReader, header *ty
 	// Check >0 TDs with pre-merge, --0 TDs with post-merge rules
 	if header.Difficulty.Sign() > 0 ||
 		// OP-Stack: transitioned networks must use legacy consensus pre-Bedrock
-		(cfg.IsOptimism() && !cfg.IsBedrock(header.Number)) {
+		cfg.IsOptimismBedrock(header.Number) {
 		return beacon.ethone.VerifyHeader(chain, header)
 	}
 	return beacon.verifyHeader(chain, header, parent)

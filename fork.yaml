@@ -270,6 +270,10 @@ def:
           globs:
             - "internal/ethapi/api.go"
             - "rpc/errors.go"
+        - title: eth_simulateV1 API fix
+          description: Add deposit-nonce tx metadata to results of `eth_simulateV1` API to match rpc block format.
+          globs:
+            - "internal/ethapi/simulate.go"
         - title: Tracer RPC daisy-chain
           description: Forward pre-bedrock tracing calls to legacy node.
           globs:

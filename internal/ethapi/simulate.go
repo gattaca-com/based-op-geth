@@ -79,19 +79,21 @@ type simBlockResult struct {
 	chainConfig *params.ChainConfig
 	Block       *types.Block
 	Calls       []simCallResult
+	Receipts    types.Receipts
 }
 
-// nulllReceiptGetter is a dummy receipt getter that panics when called.
-// It is used to stub out behaviour specific to the OPStack, so that
+// preparedReceipts implements GetReceipts with already-set receipts.
+// It is used to retrieve receipts to source deposit-tx nonce data during RPC block marshaling.
 // simBlockResult.MarshalJSON can use the OPStack RPCMarshalBlock function.
-type nullReceiptGetter struct{}
+type preparedReceipts types.Receipts
 
-func (nullReceiptGetter) GetReceipts(context.Context, common.Hash) (types.Receipts, error) {
-	panic("OPStack: not implemented")
+func (p preparedReceipts) GetReceipts(context.Context, common.Hash) (types.Receipts, error) {
+	return types.Receipts(p), nil
 }
 
 func (r *simBlockResult) MarshalJSON() ([]byte, error) {
-	blockData, err := RPCMarshalBlock(context.Background(), r.Block, true, r.fullTx, r.chainConfig, nullReceiptGetter{})
+	blockData, err := RPCMarshalBlock(context.Background(), r.Block, true, r.fullTx, r.chainConfig,
+		preparedReceipts(r.Receipts))
 	if err != nil {
 		return nil, err
 	}
@@ -153,18 +155,18 @@ func (sim *simulator) execute(ctx context.Context, blocks []simBlock) ([]*simBlo
 		parent  = sim.base
 	)
 	for bi, block := range blocks {
-		result, callResults, err := sim.processBlock(ctx, &block, headers[bi], parent, headers[:bi], timeout)
+		result, callResults, receipts, err := sim.processBlock(ctx, &block, headers[bi], parent, headers[:bi], timeout)
 		if err != nil {
 			return nil, err
 		}
 		headers[bi] = result.Header()
-		results[bi] = &simBlockResult{fullTx: sim.fullTx, chainConfig: sim.chainConfig, Block: result, Calls: callResults}
+		results[bi] = &simBlockResult{fullTx: sim.fullTx, chainConfig: sim.chainConfig, Block: result, Calls: callResults, Receipts: receipts}
 		parent = result.Header()
 	}
 	return results, nil
 }
 
-func (sim *simulator) processBlock(ctx context.Context, block *simBlock, header, parent *types.Header, headers []*types.Header, timeout time.Duration) (*types.Block, []simCallResult, error) {
+func (sim *simulator) processBlock(ctx context.Context, block *simBlock, header, parent *types.Header, headers []*types.Header, timeout time.Duration) (*types.Block, []simCallResult, types.Receipts, error) {
 	// Set header fields that depend only on parent block.
 	// Parent hash is needed for evm.GetHashFn to work.
 	header.ParentHash = parent.Hash()
@@ -194,7 +196,7 @@ func (sim *simulator) processBlock(ctx context.Context, block *simBlock, header,
 	precompiles := sim.activePrecompiles(sim.base)
 	// State overrides are applied prior to execution of a block
 	if err := block.StateOverrides.Apply(sim.state, precompiles); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	var (
 		gasUsed, blobGasUsed uint64
@@ -224,10 +226,10 @@ func (sim *simulator) processBlock(ctx context.Context, block *simBlock, header,
 	var allLogs []*types.Log
 	for i, call := range block.Calls {
 		if err := ctx.Err(); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		if err := sim.sanitizeCall(&call, sim.state, header, blockContext, &gasUsed); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		tx := call.ToTransaction(types.DynamicFeeTxType)
 		txes[i] = tx
@@ -237,7 +239,7 @@ func (sim *simulator) processBlock(ctx context.Context, block *simBlock, header,
 		result, err := applyMessageWithEVM(ctx, evm, msg, timeout, sim.gp)
 		if err != nil {
 			txErr := txValidationError(err)
-			return nil, nil, txErr
+			return nil, nil, nil, txErr
 		}
 		// Update the state with pending changes.
 		var root []byte
@@ -272,7 +274,7 @@ func (sim *simulator) processBlock(ctx context.Context, block *simBlock, header,
 		requests = [][]byte{}
 		// EIP-6110
 		if err := core.ParseDepositLogs(&requests, allLogs, sim.chainConfig); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		// EIP-7002
 		core.ProcessWithdrawalQueue(&requests, evm)
@@ -294,7 +296,7 @@ func (sim *simulator) processBlock(ctx context.Context, block *simBlock, header,
 	}
 	b := types.NewBlock(header, &types.Body{Transactions: txes, Withdrawals: withdrawals}, receipts, trie.NewStackTrie(nil), sim.chainConfig)
 	repairLogs(callResults, b.Hash())
-	return b, callResults, nil
+	return b, callResults, receipts, nil
 }
 
 // repairLogs updates the block hash in the logs present in the result of

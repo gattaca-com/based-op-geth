@@ -31,9 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enr"
 )
 
-var (
-	incompleteNodeURL = regexp.MustCompile("(?i)^(?:enode://)?([0-9a-f]+)$")
-)
+var incompleteNodeURL = regexp.MustCompile("(?i)^(?:enode://)?([0-9a-f]+)$")
 
 // MustParseV4 parses a node URL. It panics if the URL is not valid.
 func MustParseV4(rawurl string) *Node {
@@ -128,6 +126,23 @@ func parseComplete(rawurl string) (*Node, error) {
 
 	// Parse the IP and ports.
 	ip := net.ParseIP(u.Hostname())
+
+	// OP-Stack diff: add back DNS hostname resolution at parsing time
+	// - removed in https://github.com/ethereum/go-ethereum/pull/30822 in favor of on-demand runtime dialling
+	// - reported to have removed bootnodes DNS resolution at https://github.com/ethereum/go-ethereum/issues/31208
+	// - possibly broke DNS resolution for other methods of adding peers
+	if ip == nil {
+		ips, err := net.LookupIP(u.Hostname())
+		if err != nil {
+			return nil, err
+		}
+		ip = ips[0]
+	}
+	// Ensure the IP is 4 bytes long for IPv4 addresses.
+	if ipv4 := ip.To4(); ipv4 != nil {
+		ip = ipv4
+	}
+
 	if tcpPort, err = strconv.ParseUint(u.Port(), 10, 16); err != nil {
 		return nil, errors.New("invalid port")
 	}
@@ -142,7 +157,7 @@ func parseComplete(rawurl string) (*Node, error) {
 
 	// Create the node.
 	node := NewV4(id, ip, int(tcpPort), int(udpPort))
-	if ip == nil && u.Hostname() != "" {
+	if u.Hostname() != "" {
 		node = node.WithHostname(u.Hostname())
 	}
 	return node, nil

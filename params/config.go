@@ -17,6 +17,7 @@
 package params
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -25,6 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params/forks"
+	"github.com/holiman/uint256"
 )
 
 // Genesis hashes to enforce below configs on.
@@ -432,6 +434,27 @@ type ChainConfig struct {
 
 	// Optimism config, nil if not active
 	Optimism *OptimismConfig `json:"optimism,omitempty"`
+}
+
+var _ json.Unmarshaler = (*ChainConfig)(nil)
+
+func (c *ChainConfig) UnmarshalJSON(data []byte) error {
+	type Alias ChainConfig
+	D := struct {
+		TerminalTotalDifficulty *uint256.Int `json:"terminalTotalDifficulty,omitempty"`
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	}
+
+	err := json.Unmarshal(data, &D)
+	if err != nil {
+		return err
+	}
+
+	// Modify the original struct directly
+	c.TerminalTotalDifficulty = D.TerminalTotalDifficulty.ToBig()
+	return nil
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.

@@ -17,6 +17,7 @@
 package params
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -234,4 +235,21 @@ func TestConfigRulesRegolith(t *testing.T) {
 	if r := c.Rules(big.NewInt(0), true, stamp); !r.IsOptimismRegolith {
 		t.Errorf("expected %v to be regolith", stamp)
 	}
+}
+
+func TestJSONMarshalUnmarshal(t *testing.T) {
+	c := &ChainConfig{
+		RegolithTime: newUint64(500),
+		LondonBlock:  new(big.Int),
+		Optimism:     &OptimismConfig{},
+	}
+	jsonConfig, err := json.Marshal(c)
+	require.NoError(t, err)
+	err = json.Unmarshal(jsonConfig, new(ChainConfig))
+	require.NoError(t, err)
+
+	// Set TTD to a hex string
+	jsonConfig2 := `{"chainId":null,"terminalTotalDifficulty":"0x123"}`
+	err = json.Unmarshal([]byte(jsonConfig2), new(ChainConfig))
+	require.NoError(t, err)
 }

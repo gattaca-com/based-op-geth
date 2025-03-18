@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -249,7 +250,12 @@ func TestJSONMarshalUnmarshal(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set TTD to a hex string
-	jsonConfig2 := `{"chainId":null,"terminalTotalDifficulty":"0x123"}`
-	err = json.Unmarshal([]byte(jsonConfig2), new(ChainConfig))
+	jsonConfig2 := `{"chainId":null,"terminalTotalDifficulty":"0x123", "regolithTime":500}`
+	result := new(ChainConfig)
+	err = json.Unmarshal([]byte(jsonConfig2), result)
 	require.NoError(t, err)
+	big123, err := hexutil.DecodeBig("0x123")
+	require.NoError(t, err)
+	require.Equal(t, big123, result.TerminalTotalDifficulty)
+	require.Equal(t, newUint64(500), result.RegolithTime)
 }

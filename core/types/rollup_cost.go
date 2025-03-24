@@ -321,6 +321,9 @@ func newL1CostFuncEcotone(l1BaseFee, l1BlobBaseFee, l1BaseFeeScalar, l1BlobBaseF
 // NewTotalRollupCostFunc return a TotalRollupCostFunc that computes the total rollup cost, consisting
 // of both, the data availability cost and the operator cost.
 func NewTotalRollupCostFunc(config *params.ChainConfig, statedb StateGetter) TotalRollupCostFunc {
+	if !config.IsOptimism() {
+		return nil
+	}
 	l1CostFunc := NewL1CostFunc(config, statedb)
 	operatorCostFunc := NewOperatorCostFunc(config, statedb)
 

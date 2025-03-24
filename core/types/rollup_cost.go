@@ -110,6 +110,16 @@ type L1CostFunc func(rcd RollupCostData, blockTime uint64) *big.Int
 // sender of non-Deposit transactions. It returns 0 if no operator fee is charged.
 type OperatorCostFunc func(gasUsed uint64, blockTime uint64) *uint256.Int
 
+// A RollupTransaction provides all the input data needed to compute the total rollup cost.
+type RollupTransaction interface {
+	RollupCostData() RollupCostData
+	Gas() uint64
+}
+
+// TotalRollupCostFunc is used in the transaction pool to determine the total rollup cost,
+// including both the data availability fee and the operator fee. It returns nil if both costs are nil.
+type TotalRollupCostFunc func(tx RollupTransaction, blockTime uint64) *uint256.Int
+
 // l1CostFunc is an internal version of L1CostFunc that also returns the gasUsed for use in
 // receipts.
 type l1CostFunc func(rcd RollupCostData) (fee, gasUsed *big.Int)
@@ -308,6 +318,43 @@ func newL1CostFuncEcotone(l1BaseFee, l1BlobBaseFee, l1BaseFeeScalar, l1BlobBaseF
 	}
 }
 
+// NewTotalRollupCostFunc return a TotalRollupCostFunc that computes the total rollup cost, consisting
+// of both, the data availability cost and the operator cost.
+func NewTotalRollupCostFunc(config *params.ChainConfig, statedb StateGetter) TotalRollupCostFunc {
+	l1CostFunc := NewL1CostFunc(config, statedb)
+	operatorCostFunc := NewOperatorCostFunc(config, statedb)
+
+	return func(tx RollupTransaction, blockTime uint64) *uint256.Int {
+		// proper caching is happening inside the individual cost functions
+		l1Cost := l1CostFunc(tx.RollupCostData(), blockTime)
+		operatorCost := operatorCostFunc(tx.Gas(), blockTime)
+		if l1Cost == nil && operatorCost == nil {
+			return nil
+		}
+
+		var totalCost *uint256.Int
+		var overflow bool
+		if l1Cost != nil {
+			totalCost, overflow = uint256.FromBig(l1Cost)
+			if overflow {
+				panic("overflow in total rollup cost: l1Cost")
+			}
+		} else {
+			totalCost = new(uint256.Int)
+		}
+
+		// Note, the operator cost currently always returns a non-nil value, so we wouldn't
+		// need the nil-check here. But we keep it for future-proofing.
+		if operatorCost != nil {
+			_, overflow = totalCost.AddOverflow(totalCost, operatorCost)
+			if overflow {
+				panic("overflow in total rollup cost: operatorCost")
+			}
+		}
+		return totalCost
+	}
+}
+
 type gasParams struct {
 	l1BaseFee           *big.Int
 	l1BlobBaseFee       *big.Int
@@ -477,9 +524,9 @@ func l1CostHelper(gasWithOverhead, l1BaseFee, scalar *big.Int) *big.Int {
 func NewL1CostFuncFjord(l1BaseFee, l1BlobBaseFee, baseFeeScalar, blobFeeScalar *big.Int) l1CostFunc {
 	return func(costData RollupCostData) (fee, calldataGasUsed *big.Int) {
 		// Fjord L1 cost function:
-		//l1FeeScaled = baseFeeScalar*l1BaseFee*16 + blobFeeScalar*l1BlobBaseFee
-		//estimatedSize = max(minTransactionSize, intercept + fastlzCoef*fastlzSize)
-		//l1Cost = estimatedSize * l1FeeScaled / 1e12
+		// l1FeeScaled = baseFeeScalar*l1BaseFee*16 + blobFeeScalar*l1BlobBaseFee
+		// estimatedSize = max(minTransactionSize, intercept + fastlzCoef*fastlzSize)
+		// l1Cost = estimatedSize * l1FeeScaled / 1e12
 
 		scaledL1BaseFee := new(big.Int).Mul(baseFeeScalar, l1BaseFee)
 		calldataCostPerByte := new(big.Int).Mul(scaledL1BaseFee, sixteen)

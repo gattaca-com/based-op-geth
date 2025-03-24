@@ -310,7 +310,7 @@ func (l *list) Contains(nonce uint64) bool {
 //
 // If the new transaction is accepted into the list, the lists' cost and gas
 // thresholds are also potentially updated.
-func (l *list) Add(tx *types.Transaction, priceBump uint64, l1CostFn txpool.L1CostFunc) (bool, *types.Transaction) {
+func (l *list) Add(tx *types.Transaction, priceBump uint64, rollupCostFn txpool.RollupCostFunc) (bool, *types.Transaction) {
 	// If there's an older better transaction, abort
 	old := l.txs.Get(tx.Nonce())
 	if old != nil {
@@ -342,9 +342,12 @@ func (l *list) Add(tx *types.Transaction, priceBump uint64, l1CostFn txpool.L1Co
 		return false, nil
 	}
 	l.totalcost.Add(l.totalcost, cost)
-	if l1CostFn != nil {
-		if l1Cost := l1CostFn(tx.RollupCostData()); l1Cost != nil { // add rollup cost
-			l.totalcost.Add(l.totalcost, cost)
+	if rollupCostFn != nil {
+		if rollupCost := rollupCostFn(tx); rollupCost != nil { // add rollup cost
+			_, overflow = l.totalcost.AddOverflow(l.totalcost, rollupCost)
+			if overflow {
+				return false, nil
+			}
 		}
 	}
 	// Otherwise overwrite the old transaction with the current one

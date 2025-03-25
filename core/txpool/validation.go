@@ -37,9 +37,11 @@ import (
 // are not able to consume all of the gas in a L2 block as the L1 info deposit is always present.
 const l1InfoGasOverhead = uint64(70_000)
 
-// blobTxMinBlobGasPrice is the big.Int version of the configured protocol
-// parameter to avoid constructing a new big integer for every transaction.
-var blobTxMinBlobGasPrice = big.NewInt(params.BlobTxMinBlobGasprice)
+var (
+	// blobTxMinBlobGasPrice is the big.Int version of the configured protocol
+	// parameter to avoid constructing a new big integer for every transaction.
+	blobTxMinBlobGasPrice = big.NewInt(params.BlobTxMinBlobGasprice)
+)
 
 func EffectiveGasLimit(chainConfig *params.ChainConfig, gasLimit uint64, effectiveLimit uint64) uint64 {
 	if effectiveLimit != 0 && effectiveLimit < gasLimit {

@@ -278,14 +278,13 @@ func ValidateTransactionWithState(tx *types.Transaction, signer types.Signer, op
 	}
 	// Ensure the transactor has enough funds to cover the transaction costs
 	var (
-		balance = opts.State.GetBalance(from).ToBig()
-		cost    = tx.Cost()
+		balance           = opts.State.GetBalance(from).ToBig()
+		cost256, overflow = TotalTxCost(tx, opts.RollupCostFn)
 	)
-	if opts.RollupCostFn != nil {
-		if rollupCost := opts.RollupCostFn(tx); rollupCost != nil { // add rollup cost
-			cost = cost.Add(cost, rollupCost.ToBig())
-		}
+	if overflow {
+		return fmt.Errorf("%w: total tx cost overflow", core.ErrInsufficientFunds)
 	}
+	cost := cost256.ToBig()
 	if balance.Cmp(cost) < 0 {
 		return fmt.Errorf("%w: balance %v, tx cost %v, overshot %v", core.ErrInsufficientFunds, balance, cost, new(big.Int).Sub(cost, balance))
 	}

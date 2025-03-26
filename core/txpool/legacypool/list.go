@@ -337,19 +337,11 @@ func (l *list) Add(tx *types.Transaction, priceBump uint64, rollupCostFn txpool.
 		l.subTotalCost([]*types.Transaction{old})
 	}
 	// Add new tx cost to totalcost
-	cost, overflow := uint256.FromBig(tx.Cost())
+	cost, overflow := txpool.TotalTxCost(tx, rollupCostFn)
 	if overflow {
 		return false, nil
 	}
 	l.totalcost.Add(l.totalcost, cost)
-	if rollupCostFn != nil {
-		if rollupCost := rollupCostFn(tx); rollupCost != nil { // add rollup cost
-			_, overflow = l.totalcost.AddOverflow(l.totalcost, rollupCost)
-			if overflow {
-				return false, nil
-			}
-		}
-	}
 	// Otherwise overwrite the old transaction with the current one
 	l.txs.Put(tx)
 	if l.costcap.Cmp(cost) < 0 {

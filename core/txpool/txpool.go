@@ -23,8 +23,6 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/holiman/uint256"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -33,8 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 )
-
-type RollupCostFunc func(tx types.RollupTransaction) *uint256.Int
 
 // TxStatus is the current status of a transaction as seen by the pool.
 type TxStatus uint

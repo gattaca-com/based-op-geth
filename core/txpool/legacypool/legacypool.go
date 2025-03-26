@@ -637,13 +637,10 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction) error {
 		ExistingCost: func(addr common.Address, nonce uint64) *big.Int {
 			if list := pool.pending[addr]; list != nil {
 				if tx := list.txs.Get(nonce); tx != nil {
-					cost := tx.Cost()
-					if pool.rollupCostFn != nil {
-						if rollupCost := pool.rollupCostFn(tx); rollupCost != nil { // add rollup cost
-							cost = cost.Add(cost, rollupCost.ToBig())
-						}
-					}
-					return cost
+					// The total cost is guaranteed to not overflow because it got already
+					// successfully added to the list.
+					cost, _ := txpool.TotalTxCost(tx, pool.rollupCostFn)
+					return cost.ToBig()
 				}
 			}
 			return nil

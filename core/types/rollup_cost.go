@@ -171,7 +171,7 @@ func NewL1CostFunc(config *params.ChainConfig, statedb StateGetter) L1CostFunc {
 			return newL1CostFuncBedrock(config, statedb, blockTime)
 		}
 
-		l1BaseFeeScalar, l1BlobBaseFeeScalar := extractEcotoneFeeParams(l1FeeScalars)
+		l1BaseFeeScalar, l1BlobBaseFeeScalar := ExtractEcotoneFeeParams(l1FeeScalars)
 
 		if config.IsOptimismFjord(blockTime) {
 			return NewL1CostFuncFjord(
@@ -224,7 +224,7 @@ func NewOperatorCostFunc(config *params.ChainConfig, statedb StateGetter) Operat
 				return uint256.NewInt(0)
 			}
 		}
-		operatorFeeScalar, operatorFeeConstant := extractOperatorFeeParams(operatorFeeParams)
+		operatorFeeScalar, operatorFeeConstant := ExtractOperatorFeeParams(operatorFeeParams)
 
 		return newOperatorCostFunc(operatorFeeScalar, operatorFeeConstant)
 	}
@@ -565,14 +565,14 @@ func (cd RollupCostData) EstimatedDASize() *big.Int {
 	return b.Div(b, big.NewInt(1e6))
 }
 
-func extractEcotoneFeeParams(l1FeeParams []byte) (l1BaseFeeScalar, l1BlobBaseFeeScalar *big.Int) {
+func ExtractEcotoneFeeParams(l1FeeParams []byte) (l1BaseFeeScalar, l1BlobBaseFeeScalar *big.Int) {
 	offset := scalarSectionStart
 	l1BaseFeeScalar = new(big.Int).SetBytes(l1FeeParams[offset : offset+4])
 	l1BlobBaseFeeScalar = new(big.Int).SetBytes(l1FeeParams[offset+4 : offset+8])
 	return
 }
 
-func extractOperatorFeeParams(operatorFeeParams common.Hash) (operatorFeeScalar, operatorFeeConstant *big.Int) {
+func ExtractOperatorFeeParams(operatorFeeParams common.Hash) (operatorFeeScalar, operatorFeeConstant *big.Int) {
 	operatorFeeScalar = new(big.Int).SetBytes(operatorFeeParams[20:24])
 	operatorFeeConstant = new(big.Int).SetBytes(operatorFeeParams[24:32])
 	return

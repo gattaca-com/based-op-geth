@@ -286,6 +286,11 @@ type list struct {
 	costcap   *uint256.Int // Price of the highest costing transaction (reset only if exceeds balance)
 	gascap    uint64       // Gas limit of the highest spending transaction (reset only if exceeds block limit)
 	totalcost *uint256.Int // Total cost of all transactions in the list
+
+	// OP-Stack adds a backpointer to the pool's rollup cost function.
+	// A list always belongs to a fixed pool, so it's ok to use a reference instead of
+	// always passing the rollup cost function as an argument to every function.
+	rollupCostFn *txpool.RollupCostFunc
 }
 
 // newList creates a new transaction list for maintaining nonce-indexable fast,
@@ -299,6 +304,14 @@ func newList(strict bool) *list {
 	}
 }
 
+// newRollupList creates a new transaction list with a rollup cost function pointer
+// that must point back to the pool's rollup cost function this list belongs to.
+func newRollupList(strict bool, rollupCostFn *txpool.RollupCostFunc) *list {
+	l := newList(strict)
+	l.rollupCostFn = rollupCostFn
+	return l
+}
+
 // Contains returns whether the  list contains a transaction
 // with the provided nonce.
 func (l *list) Contains(nonce uint64) bool {
@@ -310,7 +323,7 @@ func (l *list) Contains(nonce uint64) bool {
 //
 // If the new transaction is accepted into the list, the lists' cost and gas
 // thresholds are also potentially updated.
-func (l *list) Add(tx *types.Transaction, priceBump uint64, rollupCostFn txpool.RollupCostFunc) (bool, *types.Transaction) {
+func (l *list) Add(tx *types.Transaction, priceBump uint64) (bool, *types.Transaction) {
 	// If there's an older better transaction, abort
 	old := l.txs.Get(tx.Nonce())
 	if old != nil {
@@ -337,7 +350,7 @@ func (l *list) Add(tx *types.Transaction, priceBump uint64, rollupCostFn txpool.
 		l.subTotalCost([]*types.Transaction{old})
 	}
 	// Add new tx cost to totalcost
-	cost, overflow := txpool.TotalTxCost(tx, rollupCostFn)
+	cost, overflow := txpool.TotalTxCost(tx, *l.rollupCostFn)
 	if overflow {
 		return false, nil
 	}
@@ -472,7 +485,11 @@ func (l *list) LastElement() *types.Transaction {
 // total cost of all transactions.
 func (l *list) subTotalCost(txs []*types.Transaction) {
 	for _, tx := range txs {
-		_, underflow := l.totalcost.SubOverflow(l.totalcost, uint256.MustFromBig(tx.Cost()))
+		cost, overflow := txpool.TotalTxCost(tx, *l.rollupCostFn)
+		if overflow {
+			panic("tx total cost overflow")
+		}
+		_, underflow := l.totalcost.SubOverflow(l.totalcost, cost)
 		if underflow {
 			panic("totalcost underflow")
 		}

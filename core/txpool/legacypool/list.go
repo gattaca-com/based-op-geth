@@ -291,7 +291,7 @@ type list struct {
 	// A list always belongs to a fixed pool, so it's ok to use a reference instead of
 	// always passing the rollup cost function as an argument to every function.
 	// It should not be accessed directly, but through the rollupCostFn method.
-	rollupCostFnPtr *txpool.RollupCostFunc
+	rollupCostFn txpool.RollupCostFunc
 }
 
 // newList creates a new transaction list for maintaining nonce-indexable fast,
@@ -307,19 +307,10 @@ func newList(strict bool) *list {
 
 // newRollupList creates a new transaction list with a rollup cost function pointer
 // that must point back to the pool's rollup cost function this list belongs to.
-func newRollupList(strict bool, rollupCostFn *txpool.RollupCostFunc) *list {
+func newRollupList(strict bool, rollupCostFn txpool.RollupCostFunc) *list {
 	l := newList(strict)
-	l.rollupCostFnPtr = rollupCostFn
+	l.rollupCostFn = rollupCostFn
 	return l
-}
-
-func (l *list) rollupCostFn() txpool.RollupCostFunc {
-	if l.rollupCostFnPtr == nil {
-		return nil
-	}
-	// This can still return nil, but we won't dereference a nil pointer of lists
-	// that got regularly created using newList instead of newRollupList.
-	return *l.rollupCostFnPtr
 }
 
 // Contains returns whether the  list contains a transaction
@@ -360,7 +351,7 @@ func (l *list) Add(tx *types.Transaction, priceBump uint64) (bool, *types.Transa
 		l.subTotalCost([]*types.Transaction{old})
 	}
 	// Add new tx cost to totalcost
-	cost, overflow := txpool.TotalTxCost(tx, l.rollupCostFn())
+	cost, overflow := txpool.TotalTxCost(tx, l.rollupCostFn)
 	if overflow {
 		return false, nil
 	}
@@ -404,7 +395,7 @@ func (l *list) Filter(costLimit *uint256.Int, gasLimit uint64) (types.Transactio
 
 	// Filter out all the transactions above the account's funds
 	removed := l.txs.Filter(func(tx *types.Transaction) bool {
-		cost, of := txpool.TotalTxCost(tx, l.rollupCostFn())
+		cost, of := txpool.TotalTxCost(tx, l.rollupCostFn)
 		if of {
 			panic("Filter: tx total cost overflow")
 		}
@@ -499,7 +490,7 @@ func (l *list) LastElement() *types.Transaction {
 // total cost of all transactions.
 func (l *list) subTotalCost(txs []*types.Transaction) {
 	for _, tx := range txs {
-		cost, overflow := txpool.TotalTxCost(tx, l.rollupCostFn())
+		cost, overflow := txpool.TotalTxCost(tx, l.rollupCostFn)
 		if overflow {
 			panic("tx total cost overflow")
 		}

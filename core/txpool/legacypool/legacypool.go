@@ -860,7 +860,7 @@ func (pool *LegacyPool) enqueueTx(hash common.Hash, tx *types.Transaction, addAl
 	// Try to insert the transaction into the future queue
 	from, _ := types.Sender(pool.signer, tx) // already validated
 	if pool.queue[from] == nil {
-		pool.queue[from] = newRollupList(false, &pool.rollupCostFn)
+		pool.queue[from] = newRollupList(false, pool.rollupCostFn)
 	}
 	inserted, old := pool.queue[from].Add(tx, pool.config.PriceBump)
 	if !inserted {
@@ -900,7 +900,7 @@ func (pool *LegacyPool) enqueueTx(hash common.Hash, tx *types.Transaction, addAl
 func (pool *LegacyPool) promoteTx(addr common.Address, hash common.Hash, tx *types.Transaction) bool {
 	// Try to insert the transaction into the pending queue
 	if pool.pending[addr] == nil {
-		pool.pending[addr] = newRollupList(true, &pool.rollupCostFn)
+		pool.pending[addr] = newRollupList(true, pool.rollupCostFn)
 	}
 	list := pool.pending[addr]
 

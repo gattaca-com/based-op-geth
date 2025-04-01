@@ -661,8 +661,8 @@ func (api *ConsensusAPI) NewPayloadV4(params engine.ExecutableData, versionedHas
 	}
 
 	if api.eth.BlockChain().Config().IsIsthmus(params.Timestamp) {
-		if len(params.Withdrawals) != 0 {
-			return engine.PayloadStatusV1{Status: engine.INVALID}, engine.InvalidParams.With(errors.New("non-empty withdrawals post-isthmus"))
+		if params.Withdrawals == nil || len(params.Withdrawals) != 0 {
+			return engine.PayloadStatusV1{Status: engine.INVALID}, engine.InvalidParams.With(errors.New("non-empty or nil withdrawals post-isthmus"))
 		}
 		if params.WithdrawalsRoot == nil {
 			return engine.PayloadStatusV1{Status: engine.INVALID}, engine.InvalidParams.With(errors.New("nil withdrawalsRoot post-isthmus"))

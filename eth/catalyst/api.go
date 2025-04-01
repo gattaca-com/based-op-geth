@@ -660,6 +660,10 @@ func (api *ConsensusAPI) NewPayloadV4(params engine.ExecutableData, versionedHas
 		return engine.PayloadStatusV1{Status: engine.INVALID}, engine.UnsupportedFork.With(errors.New("newPayloadV4 must only be called for prague payloads"))
 	}
 
+	if api.eth.BlockChain().Config().IsIsthmus(params.Timestamp) && len(params.Withdrawals) != 0 {
+		return engine.PayloadStatusV1{Status: engine.INVALID}, engine.InvalidParams.With(errors.New("non-empty withdrawals post-isthmus"))
+	}
+
 	if api.eth.BlockChain().Config().IsIsthmus(params.Timestamp) && params.WithdrawalsRoot == nil {
 		return engine.PayloadStatusV1{Status: engine.INVALID}, engine.InvalidParams.With(errors.New("nil withdrawalsRoot post-isthmus"))
 	}

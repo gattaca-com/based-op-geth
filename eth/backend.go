@@ -192,7 +192,9 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		p2pServer:       stack.Server(),
 		discmix:         enode.NewFairMix(0),
 		shutdownTracker: shutdowncheck.NewShutdownTracker(chainDb),
-		nodeCloser:        stack.Close,
+
+		// OP-Stack addition
+		nodeCloser: stack.Close,
 	}
 	bcVersion := rawdb.ReadDatabaseVersion(chainDb)
 	dbVer := "<nil>"

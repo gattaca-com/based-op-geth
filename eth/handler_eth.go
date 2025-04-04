@@ -37,9 +37,8 @@ func (h *ethHandler) Chain() *core.BlockChain { return h.chain }
 // pool. It is used to disable transaction gossip.
 type NilPool struct{}
 
-// NilPool Get always returns nil
-func (n NilPool) Get(hash common.Hash) *types.Transaction { return nil }
-func (n NilPool) GetRLP(hash common.Hash) []byte { return nil }
+func (n NilPool) Get(common.Hash) *types.Transaction { return nil }
+func (n NilPool) GetRLP(common.Hash) []byte          { return nil }
 
 func (h *ethHandler) TxPool() eth.TxPool {
 	if h.noTxGossip {

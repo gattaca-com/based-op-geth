@@ -459,7 +459,7 @@ func (miner *Miner) checkInterop(ctx context.Context, tx *types.Transaction, log
 	if len(accessList) == 0 {
 		return nil // avoid an RPC check if there are no executing messages to verify.
 	}
-	if err := b.CheckAccessList(ctx, accessList, interoptypes.CrossUnsafe, interoptypes.ExecutingDescriptor{Timestamp: logTimestamp, Timeout: 0}); err != nil {
+	if err := b.CheckAccessList(ctx, accessList, interoptypes.CrossUnsafe, interoptypes.ExecutingDescriptor{Timestamp: logTimestamp, Timeout: 0}, false); err != nil {
 		if ctx.Err() != nil { // don't reject transactions permanently on RPC timeouts etc.
 			log.Debug("CheckAccessList timed out", "err", ctx.Err())
 			return err

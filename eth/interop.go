@@ -10,11 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/miner"
 )
 
-func (s *Ethereum) CheckAccessList(ctx context.Context, inboxEntries []common.Hash, minSafety interoptypes.SafetyLevel, execDesc interoptypes.ExecutingDescriptor) error {
+func (s *Ethereum) CheckAccessList(ctx context.Context, inboxEntries []common.Hash, minSafety interoptypes.SafetyLevel, execDesc interoptypes.ExecutingDescriptor, rpcVerifyAccess bool) error {
 	if s.interopRPC == nil {
 		return errors.New("cannot check interop access list, no RPC available")
 	}
-	return s.interopRPC.CheckAccessList(ctx, inboxEntries, minSafety, execDesc)
+	return s.interopRPC.CheckAccessList(ctx, inboxEntries, minSafety, execDesc, rpcVerifyAccess)
 }
 
 // CurrentInteropBlockTime returns the current block time,

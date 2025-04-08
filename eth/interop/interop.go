@@ -48,10 +48,10 @@ func NewInteropClient(rpcEndpoint string) *InteropClient {
 	return &InteropClient{endpoint: rpcEndpoint}
 }
 
-func (cl *InteropClient) CheckAccessList(ctx context.Context, inboxEntries []common.Hash, minSafety interoptypes.SafetyLevel, executingDescriptor interoptypes.ExecutingDescriptor) error {
+func (cl *InteropClient) CheckAccessList(ctx context.Context, inboxEntries []common.Hash, minSafety interoptypes.SafetyLevel, executingDescriptor interoptypes.ExecutingDescriptor, rpcVerifyAccess bool) error {
 	if err := cl.maybeDial(ctx); err != nil {
 		return err
 	}
-	err := cl.client.CallContext(ctx, nil, "supervisor_checkAccessList", inboxEntries, minSafety, executingDescriptor)
+	err := cl.client.CallContext(ctx, nil, "supervisor_checkAccessList", inboxEntries, minSafety, executingDescriptor, rpcVerifyAccess)
 	return err
 }

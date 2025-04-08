@@ -47,7 +47,7 @@ type BackendWithHistoricalState interface {
 }
 
 type BackendWithInterop interface {
-	CheckAccessList(ctx context.Context, inboxEntries []common.Hash, minSafety interoptypes.SafetyLevel, executingDescriptor interoptypes.ExecutingDescriptor) error
+	CheckAccessList(ctx context.Context, inboxEntries []common.Hash, minSafety interoptypes.SafetyLevel, executingDescriptor interoptypes.ExecutingDescriptor, rpcVerifyAccess bool) error
 }
 
 // Config is the configuration parameters of mining.

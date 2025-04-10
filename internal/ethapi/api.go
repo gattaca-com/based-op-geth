@@ -36,6 +36,7 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -923,6 +924,10 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 	}
 	if err := overrides.Apply(state, nil); err != nil {
 		return 0, err
+	}
+	if b.ChainConfig().IsOptimism() {
+		// Reduce the gas-gap to account for system transactions
+		gasCap = txpool.EffectiveGasLimit(b.ChainConfig(), header.GasLimit, gasCap)
 	}
 	// Construct the gas estimator option from the user input
 	opts := &gasestimator.Options{

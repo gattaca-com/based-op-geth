@@ -1,0 +1,214 @@
+package catalyst
+
+import (
+	"errors"
+	"testing"
+
+	"github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
+	"github.com/stretchr/testify/require"
+)
+
+func preHolocene() *params.ChainConfig {
+	cfg := new(params.ChainConfig)
+	return cfg
+}
+
+func postHolocene() *params.ChainConfig {
+	cfg := new(params.ChainConfig)
+	cfg.HoloceneTime = new(uint64)
+	return cfg
+}
+
+func postIsthmus() *params.ChainConfig {
+	cfg := new(params.ChainConfig)
+	cfg.HoloceneTime = new(uint64)
+	cfg.IsthmusTime = new(uint64)
+	return cfg
+}
+
+var valid1559Params = []byte{0, 1, 2, 3, 4, 5, 6, 7}
+var validExtraData = []byte{0, 1, 2, 3, 4, 5, 6, 7, 8}
+
+func TestCheckOptimismPayload(t *testing.T) {
+
+	// Test cases for checkOptimismPayload
+	tests := []struct {
+		name     string
+		params   engine.ExecutableData
+		cfg      *params.ChainConfig
+		expected error
+	}{
+		{
+			name: "valid payload pre-Holocene",
+			params: engine.ExecutableData{
+				Timestamp: 0,
+				ExtraData: []byte{},
+			},
+			cfg:      preHolocene(),
+			expected: nil,
+		},
+		{
+			name: "invalid payload pre-Holocene with extraData",
+			params: engine.ExecutableData{
+				Timestamp: 0,
+				ExtraData: []byte{1, 2, 3},
+			},
+			cfg:      preHolocene(),
+			expected: errors.New("extraData must be empty before Holocene"),
+		},
+		{
+			name: "invalid payload pre-Holocene with extraData",
+			params: engine.ExecutableData{
+				Timestamp: 0,
+				ExtraData: []byte{1, 2, 3},
+			},
+			cfg:      postHolocene(),
+			expected: errors.New("holocene extraData should be 9 bytes, got 3"),
+		},
+		{
+			name: "valid payload pre-Holocene with extraData",
+			params: engine.ExecutableData{
+				Timestamp: 0,
+				ExtraData: validExtraData,
+			},
+			cfg:      postHolocene(),
+			expected: nil,
+		},
+		{
+			name: "nil withdrawals post-isthmus",
+			params: engine.ExecutableData{
+				Timestamp:   0,
+				Withdrawals: nil,
+				ExtraData:   validExtraData,
+			},
+			cfg:      postIsthmus(),
+			expected: errors.New("non-empty or nil withdrawals post-isthmus"),
+		},
+		{
+			name: "empty withdrawals post-isthmus",
+			params: engine.ExecutableData{
+				Timestamp:   0,
+				Withdrawals: make([]*types.Withdrawal, 1),
+				ExtraData:   validExtraData,
+			},
+			cfg:      postIsthmus(),
+			expected: errors.New("non-empty or nil withdrawals post-isthmus"),
+		},
+		{
+			name: "nil withdrawals root post-isthmus",
+			params: engine.ExecutableData{
+				Timestamp:   0,
+				Withdrawals: make([]*types.Withdrawal, 0),
+				ExtraData:   validExtraData,
+			},
+			cfg:      postIsthmus(),
+			expected: errors.New("nil withdrawalsRoot post-isthmus"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := checkOptimismPayload(test.params, test.cfg)
+			if test.expected == nil {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, test.expected.Error())
+			}
+		})
+	}
+}
+
+func TestCheckOptimismPayloadAttributes(t *testing.T) {
+	// Test cases for checkOptimismPayloadAttributes
+	tests := []struct {
+		name              string
+		payloadAttributes *engine.PayloadAttributes
+		cfg               *params.ChainConfig
+		expected          error
+	}{
+		{
+			name: "valid payload attributes pre-Holocene",
+			payloadAttributes: &engine.PayloadAttributes{
+				Timestamp: 0,
+				GasLimit:  new(uint64),
+			},
+			cfg:      preHolocene(),
+			expected: nil,
+		},
+		{
+			name: "invalid payload attributes pre-Holocene with gasLimit",
+			payloadAttributes: &engine.PayloadAttributes{
+				Timestamp: 0,
+				GasLimit:  nil,
+			},
+			cfg:      preHolocene(),
+			expected: errors.New("gasLimit parameter is required"),
+		},
+		{
+			name: "invalid payload attributes pre-Holocene with eip1559Params",
+			payloadAttributes: &engine.PayloadAttributes{
+				Timestamp:     0,
+				GasLimit:      new(uint64),
+				EIP1559Params: valid1559Params,
+			},
+			cfg:      preHolocene(),
+			expected: errors.New("eip155Params not supported prior to Holocene upgrade"),
+		},
+		{
+			name: "valid payload attributes post-Holocene with gasLimit",
+			payloadAttributes: &engine.PayloadAttributes{
+				Timestamp:     0,
+				GasLimit:      new(uint64),
+				EIP1559Params: valid1559Params,
+			},
+			cfg:      postHolocene(),
+			expected: nil,
+		},
+		{
+			name: "non-empty withdrawals post-isthmus",
+			payloadAttributes: &engine.PayloadAttributes{
+				Timestamp:     0,
+				GasLimit:      new(uint64),
+				EIP1559Params: valid1559Params,
+				Withdrawals:   make([]*types.Withdrawal, 1),
+			},
+			cfg:      postIsthmus(),
+			expected: errors.New("non-empty or nil withdrawals post-isthmus"),
+		},
+		{
+			name: "nil withdrawals post-isthmus",
+			payloadAttributes: &engine.PayloadAttributes{
+				Timestamp:     0,
+				GasLimit:      new(uint64),
+				EIP1559Params: valid1559Params,
+				Withdrawals:   nil,
+			},
+			cfg:      postIsthmus(),
+			expected: errors.New("non-empty or nil withdrawals post-isthmus"),
+		},
+		{
+			name: "empty withdrawals post-isthmus",
+			payloadAttributes: &engine.PayloadAttributes{
+				Timestamp:     0,
+				GasLimit:      new(uint64),
+				EIP1559Params: valid1559Params,
+				Withdrawals:   make([]*types.Withdrawal, 0),
+			},
+			cfg:      postIsthmus(),
+			expected: nil,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := checkOptimismPayloadAttributes(test.payloadAttributes, test.cfg)
+			if test.expected == nil {
+				require.NoError(t, err)
+			} else {
+				require.EqualError(t, err, test.expected.Error())
+			}
+		})
+	}
+}

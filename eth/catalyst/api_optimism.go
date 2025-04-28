@@ -25,10 +25,10 @@ func checkOptimismPayload(params engine.ExecutableData, cfg *params.ChainConfig)
 	// Isthmus
 	if cfg.IsIsthmus(params.Timestamp) {
 		if params.Withdrawals == nil || len(params.Withdrawals) != 0 {
-			return engine.InvalidParams.With(errors.New("non-empty or nil withdrawals post-isthmus"))
+			return errors.New("non-empty or nil withdrawals post-isthmus")
 		}
 		if params.WithdrawalsRoot == nil {
-			return engine.InvalidParams.With(errors.New("nil withdrawalsRoot post-isthmus"))
+			return errors.New("nil withdrawalsRoot post-isthmus")
 		}
 	}
 
@@ -38,24 +38,23 @@ func checkOptimismPayload(params engine.ExecutableData, cfg *params.ChainConfig)
 // checkOptimismPayloadAttributes performs Optimism-specific checks on the payload attributes (called during [(*ConsensusAPI).forkChoiceUpdated].
 func checkOptimismPayloadAttributes(payloadAttributes *engine.PayloadAttributes, cfg *params.ChainConfig) error {
 
-	// Universal
 	if payloadAttributes.GasLimit == nil {
-		return engine.InvalidPayloadAttributes.With(errors.New("gasLimit parameter is required"))
+		return errors.New("gasLimit parameter is required")
 	}
 
 	// Holocene
 	if cfg.IsHolocene(payloadAttributes.Timestamp) {
 		if err := eip1559.ValidateHolocene1559Params(payloadAttributes.EIP1559Params); err != nil {
-			return engine.InvalidPayloadAttributes.With(err)
+			return err
 		}
 	} else if len(payloadAttributes.EIP1559Params) != 0 {
-		return engine.InvalidPayloadAttributes.With(errors.New("eip155Params not supported prior to Holocene upgrade"))
+		return errors.New("eip155Params not supported prior to Holocene upgrade")
 	}
 
 	// Isthmus
 	if cfg.IsIsthmus(payloadAttributes.Timestamp) {
 		if payloadAttributes.Withdrawals == nil || len(payloadAttributes.Withdrawals) != 0 {
-			return engine.InvalidParams.With(errors.New("non-empty or nil withdrawals post-isthmus"))
+			return errors.New("non-empty or nil withdrawals post-isthmus")
 		}
 	}
 

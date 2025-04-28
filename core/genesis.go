@@ -377,6 +377,13 @@ func (o *ChainOverrides) apply(cfg *params.ChainConfig) error {
 		cfg.InteropTime = o.OverrideOptimismInterop
 	}
 
+	// We check for validity after applying the overrides, even if there weren't any.
+	// This has the added benefit that the check always happens when
+	// applying overrides, which is at the right places during genesis setup.
+	if verr := cfg.CheckOptimismValidity(); verr != nil {
+		return fmt.Errorf("OP-Stack invalidity after applying overrides: %w", verr)
+	}
+
 	return cfg.CheckConfigForkOrder()
 }
 
@@ -665,8 +672,9 @@ func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Has
 		// If Isthmus is active at genesis, set the WithdrawalRoot to the storage root of the L2ToL1MessagePasser contract.
 		if g.Config.IsOptimismIsthmus(g.Timestamp) {
 			if storageRootMessagePasser == (common.Hash{}) {
-				// if there was no MessagePasser contract storage, set the WithdrawalsHash to the empty hash
-				storageRootMessagePasser = types.EmptyWithdrawalsHash
+				// if there was no MessagePasser contract storage, something is wrong
+				// (it should at least store an implementation address and owner address)
+				log.Warn("isthmus: no storage root for L2ToL1MessagePasser contract")
 			}
 			head.WithdrawalsHash = &storageRootMessagePasser
 		}

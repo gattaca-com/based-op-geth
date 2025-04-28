@@ -66,7 +66,7 @@ func TestCheckOptimismPayload(t *testing.T) {
 			expected: errors.New("holocene extraData should be 9 bytes, got 3"),
 		},
 		{
-			name: "valid payload pre-Holocene with extraData",
+			name: "valid payload post-Holocene with extraData",
 			params: engine.ExecutableData{
 				Timestamp: 0,
 				ExtraData: validExtraData,
@@ -85,7 +85,7 @@ func TestCheckOptimismPayload(t *testing.T) {
 			expected: errors.New("non-empty or nil withdrawals post-isthmus"),
 		},
 		{
-			name: "empty withdrawals post-isthmus",
+			name: "non-empty withdrawals post-isthmus",
 			params: engine.ExecutableData{
 				Timestamp:   0,
 				Withdrawals: make([]*types.Withdrawal, 1),

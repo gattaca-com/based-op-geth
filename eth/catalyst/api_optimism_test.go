@@ -32,8 +32,6 @@ var valid1559Params = []byte{0, 1, 2, 3, 4, 5, 6, 7}
 var validExtraData = []byte{0, 1, 2, 3, 4, 5, 6, 7, 8}
 
 func TestCheckOptimismPayload(t *testing.T) {
-
-	// Test cases for checkOptimismPayload
 	tests := []struct {
 		name     string
 		params   engine.ExecutableData
@@ -121,7 +119,6 @@ func TestCheckOptimismPayload(t *testing.T) {
 }
 
 func TestCheckOptimismPayloadAttributes(t *testing.T) {
-	// Test cases for checkOptimismPayloadAttributes
 	tests := []struct {
 		name              string
 		payloadAttributes *engine.PayloadAttributes

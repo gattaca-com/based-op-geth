@@ -322,7 +322,7 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 	// OP-Stack diff payload attributes validation:
 	if cfg := api.eth.BlockChain().Config(); cfg.IsOptimism() {
 		if err := checkOptimismPayloadAttributes(payloadAttributes, cfg); err != nil {
-			return engine.STATUS_INVALID, err
+			return engine.STATUS_INVALID, engine.InvalidPayloadAttributes.With(err)
 		}
 	}
 

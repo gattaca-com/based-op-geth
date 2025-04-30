@@ -105,3 +105,14 @@ func (tx *DepositTx) encode(b *bytes.Buffer) error {
 func (tx *DepositTx) decode(input []byte) error {
 	return rlp.DecodeBytes(input, tx)
 }
+
+// From is an OP-Stack addition to the Transaction type to easily get a deposit
+// transaction sender address.
+// It can be difficult to create a correct signer just to extract the From field
+// from a deposit transaction if the chain ID is not known.
+func (tx *Transaction) From() common.Address {
+	if tx.Type() != DepositTxType {
+		panic("From() called on non-deposit transaction")
+	}
+	return tx.inner.(*DepositTx).From
+}

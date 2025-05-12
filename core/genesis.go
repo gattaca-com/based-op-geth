@@ -490,11 +490,6 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 		return nil, common.Hash{}, nil, err
 	}
 
-	// Sanity-check the new configuration.
-	if err := newCfg.CheckConfigForkOrder(); err != nil {
-		return nil, common.Hash{}, nil, err
-	}
-
 	// OP-Stack note: Always apply overrides.
 	// The genesis function arg may be nil, and stored-config may be non-nil at the same time.
 	// This is important to apply superchain-upgrades to existing DBs, where the network CLI flag is not used.
@@ -667,8 +662,9 @@ func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Has
 		// If Isthmus is active at genesis, set the WithdrawalRoot to the storage root of the L2ToL1MessagePasser contract.
 		if g.Config.IsOptimismIsthmus(g.Timestamp) {
 			if storageRootMessagePasser == (common.Hash{}) {
-				// if there was no MessagePasser contract storage, set the WithdrawalsHash to the empty hash
-				storageRootMessagePasser = types.EmptyWithdrawalsHash
+				// if there was no MessagePasser contract storage, something is wrong
+				// (it should at least store an implementation address and owner address)
+				log.Warn("isthmus: no storage root for L2ToL1MessagePasser contract")
 			}
 			head.WithdrawalsHash = &storageRootMessagePasser
 		}

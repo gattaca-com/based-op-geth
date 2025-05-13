@@ -33,7 +33,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/types/interoptypes"
 	"github.com/ethereum/go-ethereum/eth/tracers"
+	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/params"
+)
+
+var (
+	maxDATxSizeGuage    = metrics.NewRegisteredGauge("miner/maxDATxSize", nil)
+	maxDABlockSizeGuage = metrics.NewRegisteredGauge("miner/maxDABlockSize", nil)
 )
 
 // Backend wraps all methods required for mining. Only full node is capable
@@ -187,6 +193,8 @@ func (miner *Miner) SetMaxDASize(maxTxSize, maxBlockSize *big.Int) {
 		miner.config.MaxDABlockSize = new(big.Int).Set(maxBlockSize)
 	}
 	miner.confMu.Unlock()
+	maxDABlockSizeGuage.Update(miner.config.MaxDABlockSize.Int64())
+	maxDATxSizeGuage.Update(miner.config.MaxDATxSize.Int64())
 }
 
 // BuildPayload builds the payload according to the provided parameters.

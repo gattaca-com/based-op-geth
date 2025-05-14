@@ -193,8 +193,17 @@ func (miner *Miner) SetMaxDASize(maxTxSize, maxBlockSize *big.Int) {
 		miner.config.MaxDABlockSize = new(big.Int).Set(maxBlockSize)
 	}
 	miner.confMu.Unlock()
-	maxDABlockSizeGuage.Update(miner.config.MaxDABlockSize.Int64())
-	maxDATxSizeGuage.Update(miner.config.MaxDATxSize.Int64())
+
+	if maxTxSize == nil || maxTxSize.BitLen() == 0 {
+		maxDATxSizeGuage.Update(0)
+	} else {
+		maxDATxSizeGuage.Update(maxTxSize.Int64())
+	}
+	if maxBlockSize == nil || maxBlockSize.BitLen() == 0 {
+		maxDABlockSizeGuage.Update(0)
+	} else {
+		maxDABlockSizeGuage.Update(maxBlockSize.Int64())
+	}
 }
 
 // BuildPayload builds the payload according to the provided parameters.

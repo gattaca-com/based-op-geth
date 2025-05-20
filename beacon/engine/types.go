@@ -427,7 +427,7 @@ func SealBlock(bc *core.BlockChain, ub *types.UnsealedBlock) (*types.Block, erro
 		Root:             bc.CurrentUnsealedBlockState().IntermediateRoot(bc.Config().IsEIP158(new(big.Int).SetUint64(ub.Env.Number))),
 		TxHash:           types.DeriveSha(types.Transactions(ub.Transactions()), trie.NewStackTrie(nil)),
 		ReceiptHash:      types.DeriveSha(ub.Receipts, trie.NewStackTrie(nil)),
-		Bloom:            types.CreateBloom(ub.Receipts),
+		Bloom:            types.MergeBloom(ub.Receipts),
 		Difficulty:       ub.Env.Difficulty.ToBig(),
 		Number:           new(big.Int).SetUint64(ub.Env.Number),
 		GasLimit:         ub.Env.GasLimit,
@@ -446,7 +446,6 @@ func SealBlock(bc *core.BlockChain, ub *types.UnsealedBlock) (*types.Block, erro
 		Transactions: ub.Transactions(),
 		Uncles:       nil,
 		Withdrawals:  []*types.Withdrawal{},
-		Requests:     ub.Requests,
 	})
 
 	_, err := bc.InsertBlockWithoutSetHead(block, false)

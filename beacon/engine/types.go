@@ -512,8 +512,8 @@ type Seal struct {
 	TransactionsRoot common.Hash `json:"transactionsRoot"`
 	ReceiptsRoot     common.Hash `json:"receiptsRoot"`
 	StateRoot        common.Hash `json:"stateRoot"`
-	WithdrawalsRoot  common.Hash `json:"withdrawalsRoot"`
 	BlockHash        common.Hash `json:"blockHash"`
+	WithdrawalsRoot  common.Hash `json:"withdrawalsRoot"`
 }
 
 type SignedEnv struct {

@@ -20,16 +20,21 @@ type UnsealedBlock struct {
 	Logs                  []*Log
 	CumulativeGasUsed     uint64
 	CumulativeBlobGasUsed uint64
+	WithdrawalsHash       common.Hash
+	RequestsHash          *common.Hash
 }
 
 func NewUnsealedBlock(e *Env) *UnsealedBlock {
 	return &UnsealedBlock{
-		Env:                   e,
-		Frags:                 []Frag{},
-		LastSequenceNumber:    nil,
-		Hash:                  common.Hash{},
-		Receipts:              Receipts{},
-		Logs:                  []*Log{},
+		Env:                e,
+		Frags:              []Frag{},
+		LastSequenceNumber: nil,
+		WithdrawalsHash:    common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"),
+		RequestsHash:       nil,
+		Hash:               common.Hash{},
+		Receipts:           Receipts{},
+		Logs:               []*Log{},
+
 		CumulativeGasUsed:     0,
 		CumulativeBlobGasUsed: 0,
 	}

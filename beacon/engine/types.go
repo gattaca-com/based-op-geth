@@ -424,7 +424,7 @@ func SealBlock(bc *core.BlockChain, ub *types.UnsealedBlock) (*types.Block, erro
 	var withDrawalsHash *common.Hash
 	if bc.Config().IsPrague(big.NewInt(int64(ub.Env.Number)), ub.Env.Timestamp) {
 		requestsHash = &types.EmptyRequestsHash
-		withDrawalsHash = bc.CurrentUnsealedBlock().TempHeader().WithdrawalsHash
+		withDrawalsHash = &bc.CurrentUnsealedBlock().WithdrawalsHash
 	} else {
 		requestsHash = nil
 		withDrawalsHash = &types.EmptyWithdrawalsHash
@@ -513,7 +513,6 @@ type Seal struct {
 	ReceiptsRoot     common.Hash `json:"receiptsRoot"`
 	StateRoot        common.Hash `json:"stateRoot"`
 	BlockHash        common.Hash `json:"blockHash"`
-	WithdrawalsRoot  common.Hash `json:"withdrawalsRoot"`
 }
 
 type SignedEnv struct {

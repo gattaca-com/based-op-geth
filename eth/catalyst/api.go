@@ -1447,8 +1447,6 @@ func (api *ConsensusAPI) sealFragV0(seal engine.SignedSeal) (string, error) {
 		return engine.INVALID, err
 	}
 
-	preSealedBlock.Header().WithdrawalsHash = &seal.Seal.WithdrawalsRoot
-
 	if _, error := api.eth.BlockChain().SetCanonical(preSealedBlock); error != nil {
 		return engine.INVALID, errors.New("cannot update canonical block")
 	}

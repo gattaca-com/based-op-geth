@@ -421,10 +421,14 @@ func SealBlock(bc *core.BlockChain, ub *types.UnsealedBlock) (*types.Block, erro
 	}
 
 	var requestsHash *common.Hash
+	var withDrawalsHash *common.Hash
 	if bc.Config().IsPrague(big.NewInt(int64(ub.Env.Number)), ub.Env.Timestamp) {
 		requestsHash = &types.EmptyRequestsHash
+		withDrawalsHash = ub.TempHeader().WithdrawalsHash
 	} else {
 		requestsHash = nil
+		withDrawalsHash = &types.EmptyWithdrawalsHash
+
 	}
 
 	block := types.NewBlockWithHeader(&types.Header{
@@ -444,7 +448,7 @@ func SealBlock(bc *core.BlockChain, ub *types.UnsealedBlock) (*types.Block, erro
 		MixDigest:        ub.Env.Prevrandao,
 		Nonce:            types.EncodeNonce(0),
 		BaseFee:          new(big.Int).SetUint64(ub.Env.Basefee),
-		WithdrawalsHash:  &types.EmptyWithdrawalsHash,
+		WithdrawalsHash:  withDrawalsHash,
 		BlobGasUsed:      new(uint64),
 		ExcessBlobGas:    new(uint64),
 		ParentBeaconRoot: &ub.Env.ParentBeaconBlockRoot,

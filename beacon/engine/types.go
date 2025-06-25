@@ -420,6 +420,13 @@ func SealBlock(bc *core.BlockChain, ub *types.UnsealedBlock) (*types.Block, erro
 		return nil, fmt.Errorf("unsealed block state db not set")
 	}
 
+	var requestsHash *common.Hash
+	if bc.Config().IsPrague(big.NewInt(int64(ub.Env.Number)), ub.Env.Timestamp) {
+		requestsHash = &types.EmptyRequestsHash
+	} else {
+		requestsHash = nil
+	}
+
 	block := types.NewBlockWithHeader(&types.Header{
 		ParentHash:       ub.Env.ParentHash,
 		UncleHash:        types.EmptyUncleHash,
@@ -441,7 +448,7 @@ func SealBlock(bc *core.BlockChain, ub *types.UnsealedBlock) (*types.Block, erro
 		BlobGasUsed:      new(uint64),
 		ExcessBlobGas:    new(uint64),
 		ParentBeaconRoot: &ub.Env.ParentBeaconBlockRoot,
-		// RequestsHash:     &types.EmptyRequestsHash, // TODO: Double check this is ok, in the Rust side it is done this way, but we have an types.EmptyRequestsHash available to use.
+		RequestsHash:     requestsHash,
 	}).WithBody(types.Body{
 		Transactions: ub.Transactions(),
 		Uncles:       nil,

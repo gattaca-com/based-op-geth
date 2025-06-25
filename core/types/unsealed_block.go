@@ -139,10 +139,11 @@ func (f *Frag) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(struct {
-		BlockNumber uint64   `json:"blockNumber"`
-		Seq         uint64   `json:"seq"`
-		IsLast      bool     `json:"isLast"`
-		Txs         [][]byte `json:"txs"`
+		BlockNumber     uint64      `json:"blockNumber"`
+		Seq             uint64      `json:"seq"`
+		IsLast          bool        `json:"isLast"`
+		WithdrawalsRoot common.Hash `json:"withdrawalsRoot"`
+		Txs             [][]byte    `json:"txs"`
 	}{
 		BlockNumber: f.BlockNumber,
 		Seq:         f.Seq,

@@ -1380,6 +1380,7 @@ func (api *ConsensusAPI) newFragV0(f engine.SignedNewFrag) (string, error) {
 
 	if f.Frag.IsLast {
 		log.Info("last frag received, pre-sealing block")
+
 		sealedBlock, err := engine.SealBlock(api.eth.BlockChain(), ub)
 		if sealedBlock != nil {
 			log.Info("block pre-sealed", "block", sealedBlock.Number(), "hash", sealedBlock.Hash())
@@ -1445,6 +1446,8 @@ func (api *ConsensusAPI) sealFragV0(seal engine.SignedSeal) (string, error) {
 	if err != nil {
 		return engine.INVALID, err
 	}
+
+	preSealedBlock.Header().WithdrawalsHash = &seal.Seal.WithdrawalsRoot
 
 	if _, error := api.eth.BlockChain().SetCanonical(preSealedBlock); error != nil {
 		return engine.INVALID, errors.New("cannot update canonical block")

@@ -87,11 +87,10 @@ func (ub *UnsealedBlock) TempHeader() *Header {
 }
 
 type Frag struct {
-	BlockNumber     uint64
-	Seq             uint64
-	IsLast          bool
-	WithdrawalsRoot common.Hash
-	Txs             []*Transaction
+	BlockNumber uint64
+	Seq         uint64
+	IsLast      bool
+	Txs         []*Transaction
 }
 
 func (f *Frag) IsFirst() bool {
@@ -100,11 +99,10 @@ func (f *Frag) IsFirst() bool {
 
 func (f *Frag) UnmarshalJSON(data []byte) error {
 	var frag struct {
-		BlockNumber     uint64          `json:"blockNumber"`
-		Seq             uint64          `json:"seq"`
-		IsLast          bool            `json:"isLast"`
-		WithdrawalsRoot common.Hash     `json:"withdrawalsRoot"`
-		Txs             []hexutil.Bytes `json:"txs"`
+		BlockNumber uint64          `json:"blockNumber"`
+		Seq         uint64          `json:"seq"`
+		IsLast      bool            `json:"isLast"`
+		Txs         []hexutil.Bytes `json:"txs"`
 	}
 
 	if err := json.Unmarshal(data, &frag); err != nil {
@@ -115,7 +113,6 @@ func (f *Frag) UnmarshalJSON(data []byte) error {
 	f.BlockNumber = frag.BlockNumber
 	f.Seq = frag.Seq
 	f.IsLast = frag.IsLast
-	f.WithdrawalsRoot = frag.WithdrawalsRoot
 	f.Txs = make([]*Transaction, len(frag.Txs))
 
 	for i, txData := range frag.Txs {
@@ -148,11 +145,10 @@ func (f *Frag) MarshalJSON() ([]byte, error) {
 		WithdrawalsRoot common.Hash `json:"withdrawalsRoot"`
 		Txs             [][]byte    `json:"txs"`
 	}{
-		BlockNumber:     f.BlockNumber,
-		Seq:             f.Seq,
-		IsLast:          f.IsLast,
-		WithdrawalsRoot: f.WithdrawalsRoot,
-		Txs:             txs,
+		BlockNumber: f.BlockNumber,
+		Seq:         f.Seq,
+		IsLast:      f.IsLast,
+		Txs:         txs,
 	})
 }
 

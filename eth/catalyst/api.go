@@ -1380,6 +1380,8 @@ func (api *ConsensusAPI) newFragV0(f engine.SignedNewFrag) (string, error) {
 
 	if f.Frag.IsLast {
 		log.Info("last frag received, pre-sealing block")
+		ub.TempHeader().WithdrawalsHash = &f.Frag.WithdrawalsRoot
+
 		sealedBlock, err := engine.SealBlock(api.eth.BlockChain(), ub)
 		if sealedBlock != nil {
 			log.Info("block pre-sealed", "block", sealedBlock.Number(), "hash", sealedBlock.Hash())

@@ -388,9 +388,14 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 		// Block is not canonical, set head.
 		if latestValid, err := api.eth.BlockChain().SetCanonical(block); err != nil {
 			bc := api.eth.BlockChain().CurrentUnsealedBlock()
-			if bc != nil && bc.Env.Number == block.NumberU64() {
-				log.Info("Ignoring current unsealed block", "number", block.NumberU64(), "hash", update.HeadBlockHash, "age", common.PrettyAge(time.Unix(int64(block.Time()), 0)), "have", api.eth.BlockChain().CurrentBlock().Number)
-				api.eth.BlockChain().ResetCurrentUnsealedBlock()
+			if bc != nil {
+				if bc.Env.Number == block.NumberU64() {
+					log.Info("Ignoring current unsealed block", "number", block.NumberU64(), "hash", update.HeadBlockHash, "age", common.PrettyAge(time.Unix(int64(block.Time()), 0)), "have", api.eth.BlockChain().CurrentBlock().Number)
+					api.eth.BlockChain().ResetCurrentUnsealedBlock()
+				} else {
+					log.Info("don't know what to do with weird unsealed block number", "real number", block.NumberU64(), "unsealed number", bc.Env.Number)
+
+				}
 			}
 			return engine.ForkChoiceResponse{PayloadStatus: engine.PayloadStatusV1{Status: engine.INVALID, LatestValidHash: &latestValid}}, err
 		}

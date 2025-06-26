@@ -1537,7 +1537,11 @@ func (api *ConsensusAPI) EnvV0(env engine.SignedEnv) (string, error) {
 
 func (api *ConsensusAPI) envV0(env engine.SignedEnv) (string, error) {
 	if err := api.ValidateEnvV0(env); err != nil {
-		return engine.INVALID, err
+		if api.eth.BlockChain().CurrentUnsealedBlock() != nil && api.eth.BlockChain().CurrentUnsealedBlock().Env.Number < env.Env.Number {
+			api.eth.BlockChain().ResetCurrentUnsealedBlock()
+		} else {
+			return engine.INVALID, err
+		}
 	}
 
 	unsealedBlock := types.NewUnsealedBlock((*types.Env)(&env.Env))

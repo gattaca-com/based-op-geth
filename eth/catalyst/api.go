@@ -385,12 +385,13 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 		}
 	}
 	if rawdb.ReadCanonicalHash(api.eth.ChainDb(), block.NumberU64()) != update.HeadBlockHash {
-		bc := api.eth.BlockChain().CurrentUnsealedBlock()
-		if bc != nil && bc.Env.Number == block.NumberU64() {
-			api.eth.BlockChain().ResetCurrentUnsealedBlock()
-		}
 		// Block is not canonical, set head.
 		if latestValid, err := api.eth.BlockChain().SetCanonical(block); err != nil {
+			bc := api.eth.BlockChain().CurrentUnsealedBlock()
+			if bc != nil && bc.Env.Number == block.NumberU64() {
+				log.Info("Ignoring current unsealed block", "number", block.NumberU64(), "hash", update.HeadBlockHash, "age", common.PrettyAge(time.Unix(int64(block.Time()), 0)), "have", api.eth.BlockChain().CurrentBlock().Number)
+				api.eth.BlockChain().ResetCurrentUnsealedBlock()
+			}
 			return engine.ForkChoiceResponse{PayloadStatus: engine.PayloadStatusV1{Status: engine.INVALID, LatestValidHash: &latestValid}}, err
 		}
 	} else if api.eth.BlockChain().CurrentBlock().Hash() == update.HeadBlockHash {

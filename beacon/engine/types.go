@@ -424,7 +424,8 @@ func SealBlock(bc *core.BlockChain, ub *types.UnsealedBlock) (*types.Block, erro
 	var withDrawalsHash *common.Hash
 	if bc.Config().IsPrague(big.NewInt(int64(ub.Env.Number)), ub.Env.Timestamp) {
 		requestsHash = &types.EmptyRequestsHash
-		withDrawalsHash = &bc.CurrentUnsealedBlock().WithdrawalsHash
+		h := bc.CurrentUnsealedBlockState().GetStorageRoot(params.OptimismL2ToL1MessagePasser)
+		withDrawalsHash = &h
 	} else {
 		requestsHash = nil
 		withDrawalsHash = &types.EmptyWithdrawalsHash

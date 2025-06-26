@@ -1377,6 +1377,9 @@ func (api *ConsensusAPI) newFragV0(f engine.SignedNewFrag) (string, error) {
 		log.Error("frag is invalid", "error", err)
 		return engine.INVALID, err
 	}
+	if f.Frag.BlockNumber < api.eth.BlockChain().CurrentUnsealedBlock().Env.Number {
+		return engine.VALID, nil
+	}
 
 	log.Info("frag is valid", "forBlock", f.Frag.BlockNumber, "current", ub.Env.Number)
 
@@ -1416,8 +1419,11 @@ func (api *ConsensusAPI) ValidateNewFragV0(frag engine.SignedNewFrag, currentUns
 	}
 
 	// Check that the block number matches the unsealed block
-	if frag.Frag.BlockNumber != currentUnsealedBlock.Env.Number {
+	if frag.Frag.BlockNumber > currentUnsealedBlock.Env.Number {
 		return fmt.Errorf("frag block number doesn't match opened unsealed block number, expected %d, received %d", currentUnsealedBlock.Env.Number, frag.Frag.BlockNumber)
+	} else if frag.Frag.BlockNumber < currentUnsealedBlock.Env.Number {
+		log.Warn("old frag, dropping")
+		return nil
 	}
 
 	// Check that the frag sequence number is the next one

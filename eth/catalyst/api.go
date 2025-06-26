@@ -385,7 +385,8 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 		}
 	}
 	if rawdb.ReadCanonicalHash(api.eth.ChainDb(), block.NumberU64()) != update.HeadBlockHash {
-		if api.eth.BlockChain().CurrentUnsealedBlock().Env.Number == block.NumberU64() {
+		bc := api.eth.BlockChain().CurrentUnsealedBlock()
+		if bc != nil && bc.Env.Number == block.NumberU64() {
 			api.eth.BlockChain().ResetCurrentUnsealedBlock()
 		}
 		// Block is not canonical, set head.
@@ -1449,8 +1450,6 @@ func (api *ConsensusAPI) sealFragV0(seal engine.SignedSeal) (string, error) {
 	if err != nil {
 		return engine.INVALID, err
 	}
-
-	preSealedBlock.Header().WithdrawalsHash = &seal.Seal.WithdrawalsRoot
 
 	if _, error := api.eth.BlockChain().SetCanonical(preSealedBlock); error != nil {
 		return engine.INVALID, errors.New("cannot update canonical block")

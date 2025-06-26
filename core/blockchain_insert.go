@@ -201,11 +201,10 @@ func (bc *BlockChain) InsertNewFrag(frag types.Frag) error {
 		MixDigest:        currentUnsealedBlock.Env.Prevrandao,
 		Nonce:            types.EncodeNonce(0),
 		BaseFee:          new(big.Int).SetUint64(currentUnsealedBlock.Env.Basefee),
-		WithdrawalsHash:  &currentUnsealedBlock.WithdrawalsHash,
+		WithdrawalsHash:  &types.EmptyWithdrawalsHash,
 		BlobGasUsed:      new(uint64),
 		ExcessBlobGas:    new(uint64),
 		ParentBeaconRoot: &currentUnsealedBlock.Env.ParentBeaconBlockRoot,
-		RequestsHash:     currentUnsealedBlock.RequestsHash,
 	}).WithBody(types.Body{
 		Transactions: frag.Txs,
 		Uncles:       nil,

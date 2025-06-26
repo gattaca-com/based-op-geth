@@ -387,6 +387,16 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 	if rawdb.ReadCanonicalHash(api.eth.ChainDb(), block.NumberU64()) != update.HeadBlockHash {
 		// Block is not canonical, set head.
 		if latestValid, err := api.eth.BlockChain().SetCanonical(block); err != nil {
+			bc := api.eth.BlockChain().CurrentUnsealedBlock()
+			if bc != nil {
+				if bc.Env.Number == block.NumberU64() {
+					log.Info("Ignoring current unsealed block", "number", block.NumberU64(), "hash", update.HeadBlockHash, "age", common.PrettyAge(time.Unix(int64(block.Time()), 0)), "have", api.eth.BlockChain().CurrentBlock().Number)
+					api.eth.BlockChain().ResetCurrentUnsealedBlock()
+				} else {
+					log.Info("don't know what to do with weird unsealed block number", "real number", block.NumberU64(), "unsealed number", bc.Env.Number)
+
+				}
+			}
 			return engine.ForkChoiceResponse{PayloadStatus: engine.PayloadStatusV1{Status: engine.INVALID, LatestValidHash: &latestValid}}, err
 		}
 	} else if api.eth.BlockChain().CurrentBlock().Hash() == update.HeadBlockHash {
@@ -1367,6 +1377,9 @@ func (api *ConsensusAPI) newFragV0(f engine.SignedNewFrag) (string, error) {
 		log.Error("frag is invalid", "error", err)
 		return engine.INVALID, err
 	}
+	if f.Frag.BlockNumber < api.eth.BlockChain().CurrentUnsealedBlock().Env.Number {
+		return engine.VALID, nil
+	}
 
 	log.Info("frag is valid", "forBlock", f.Frag.BlockNumber, "current", ub.Env.Number)
 
@@ -1406,8 +1419,11 @@ func (api *ConsensusAPI) ValidateNewFragV0(frag engine.SignedNewFrag, currentUns
 	}
 
 	// Check that the block number matches the unsealed block
-	if frag.Frag.BlockNumber != currentUnsealedBlock.Env.Number {
+	if frag.Frag.BlockNumber > currentUnsealedBlock.Env.Number {
 		return fmt.Errorf("frag block number doesn't match opened unsealed block number, expected %d, received %d", currentUnsealedBlock.Env.Number, frag.Frag.BlockNumber)
+	} else if frag.Frag.BlockNumber < currentUnsealedBlock.Env.Number {
+		log.Warn("old frag, dropping")
+		return nil
 	}
 
 	// Check that the frag sequence number is the next one
@@ -1424,6 +1440,10 @@ func (api *ConsensusAPI) ValidateNewFragV0(frag engine.SignedNewFrag, currentUns
 
 func (api *ConsensusAPI) SealFragV0(seal engine.SignedSeal) (string, error) {
 	log.Info("seal received", "forBlock", seal.Seal.BlockNumber, "current", api.eth.BlockChain().CurrentBlock().Number, "seal", seal.Seal)
+	if api.eth.BlockChain().CurrentUnsealedBlock() != nil && api.eth.BlockChain().CurrentUnsealedBlock().Env.Number > seal.Seal.BlockNumber {
+		log.Info("seal was outdated, dropping")
+		return engine.VALID, nil
+	}
 
 	api.unsealedBlockLock.Lock()
 	res, err := api.sealFragV0(seal)
@@ -1446,8 +1466,6 @@ func (api *ConsensusAPI) sealFragV0(seal engine.SignedSeal) (string, error) {
 	if err != nil {
 		return engine.INVALID, err
 	}
-
-	preSealedBlock.Header().WithdrawalsHash = &seal.Seal.WithdrawalsRoot
 
 	if _, error := api.eth.BlockChain().SetCanonical(preSealedBlock); error != nil {
 		return engine.INVALID, errors.New("cannot update canonical block")
@@ -1519,7 +1537,11 @@ func (api *ConsensusAPI) EnvV0(env engine.SignedEnv) (string, error) {
 
 func (api *ConsensusAPI) envV0(env engine.SignedEnv) (string, error) {
 	if err := api.ValidateEnvV0(env); err != nil {
-		return engine.INVALID, err
+		if api.eth.BlockChain().CurrentUnsealedBlock() != nil && api.eth.BlockChain().CurrentUnsealedBlock().Env.Number < env.Env.Number {
+			api.eth.BlockChain().ResetCurrentUnsealedBlock()
+		} else {
+			return engine.INVALID, err
+		}
 	}
 
 	unsealedBlock := types.NewUnsealedBlock((*types.Env)(&env.Env))

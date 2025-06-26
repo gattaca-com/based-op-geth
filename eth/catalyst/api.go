@@ -1440,6 +1440,10 @@ func (api *ConsensusAPI) ValidateNewFragV0(frag engine.SignedNewFrag, currentUns
 
 func (api *ConsensusAPI) SealFragV0(seal engine.SignedSeal) (string, error) {
 	log.Info("seal received", "forBlock", seal.Seal.BlockNumber, "current", api.eth.BlockChain().CurrentBlock().Number, "seal", seal.Seal)
+	if api.eth.BlockChain().CurrentUnsealedBlock() != nil && api.eth.BlockChain().CurrentUnsealedBlock().Env.Number > seal.Seal.BlockNumber {
+		log.Info("seal was outdated, dropping")
+		return engine.VALID, nil
+	}
 
 	api.unsealedBlockLock.Lock()
 	res, err := api.sealFragV0(seal)

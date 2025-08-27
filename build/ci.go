@@ -182,10 +182,10 @@ func main() {
 
 func doInstall(cmdline []string) {
 	var (
-		dlgo       = flag.Bool("dlgo", false, "Download Go and build with it")
-		arch       = flag.String("arch", "", "Architecture to cross build for")
-		cc         = flag.String("cc", "", "C compiler to cross build with")
-		staticlink = flag.Bool("static", false, "Create statically-linked executable")
+		dlgo = flag.Bool("dlgo", false, "Download Go and build with it")
+		arch = flag.String("arch", "", "Architecture to cross build for")
+		cc   = flag.String("cc", "", "C compiler to cross build with")
+		// staticlink = flag.Bool("static", false, "Create statically-linked executable")
 	)
 	flag.CommandLine.Parse(cmdline)
 	env := build.Env()
@@ -205,10 +205,11 @@ func doInstall(cmdline []string) {
 	}
 
 	// Configure the build.
-	gobuild := tc.Go("build", buildFlags(env, *staticlink, buildTags)...)
+	gobuild := tc.Go("build", buildFlags(env, false, buildTags)...)
 
 	// We use -trimpath to avoid leaking local paths into the built executables.
-	gobuild.Args = append(gobuild.Args, "-trimpath")
+	// NOTE(thedevbirb): add also -race flag
+	gobuild.Args = append(gobuild.Args, "-trimpath", "-race")
 
 	// Show packages during build.
 	gobuild.Args = append(gobuild.Args, "-v")
@@ -376,9 +377,7 @@ func doCheckTidy() {
 // doCheckGenerate ensures that re-generating generated files does not cause
 // any mutations in the source file tree.
 func doCheckGenerate() {
-	var (
-		cachedir = flag.String("cachedir", "./build/cache", "directory for caching binaries.")
-	)
+	cachedir := flag.String("cachedir", "./build/cache", "directory for caching binaries.")
 	// Compute the origin hashes of all the files
 	var hashes map[string][32]byte
 
@@ -444,9 +443,7 @@ func doCheckBadDeps() {
 
 // doLint runs golangci-lint on requested packages.
 func doLint(cmdline []string) {
-	var (
-		cachedir = flag.String("cachedir", "./build/cache", "directory for caching golangci-lint binary.")
-	)
+	cachedir := flag.String("cachedir", "./build/cache", "directory for caching golangci-lint binary.")
 	flag.CommandLine.Parse(cmdline)
 	packages := []string{"./..."}
 	if len(flag.CommandLine.Args()) > 0 {

@@ -478,5 +478,5 @@ func (b *EthAPIBackend) Genesis() *types.Block {
 }
 
 func (b *EthAPIBackend) GetUnsealedBlock() *types.UnsealedBlock {
-	return b.eth.blockchain.CurrentUnsealedBlock()
+	return b.eth.blockchain.CurrentUnsealedBlockMetadata()
 }

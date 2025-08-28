@@ -178,7 +178,7 @@ func (it *insertIterator) remaining() int {
 }
 
 func (bc *BlockChain) InsertNewFrag(frag types.Frag) error {
-	currentUnsealedBlock := bc.CurrentUnsealedBlockMetadata()
+	currentUnsealedBlock := bc.CurrentUnsealedBlock()
 
 	if bc.unsealedBlockDbState == nil {
 		return fmt.Errorf("unsealed block state db not set")
@@ -211,36 +211,21 @@ func (bc *BlockChain) InsertNewFrag(frag types.Frag) error {
 		Withdrawals:  []*types.Withdrawal{},
 	})
 
-	// Begin write transaction to get exclusive access to the state
-	workingState, err := bc.unsealedBlockDbState.BeginWriteTransaction()
-	if err != nil {
-		return fmt.Errorf("failed to begin write transaction: %w", err)
-	}
-
-	// Process the frag with the working state
-	res, err := bc.Processor().ProcessWithCumulativeGas(block, workingState.StateDB, bc.vmConfig, &workingState.Metadata.CumulativeGasUsed)
+	res, err := bc.Processor().ProcessWithCumulativeGas(block, bc.unsealedBlockDbState, bc.vmConfig, &bc.currentUnsealedBlock.CumulativeGasUsed)
 
 	if err != nil {
-		// Rollback on error
-		bc.unsealedBlockDbState.RollbackWriteTransaction()
 		return err
 	}
 
-	// Update the metadata atomically with the state changes
 	for _, receipt := range res.Receipts {
-		workingState.Metadata.CumulativeBlobGasUsed += receipt.BlobGasUsed
+		currentUnsealedBlock.CumulativeBlobGasUsed += receipt.BlobGasUsed
 	}
 
-	workingState.Metadata.Frags = append(workingState.Metadata.Frags, frag)
-	workingState.Metadata.LastSequenceNumber = &frag.Seq
-	workingState.Metadata.Receipts = append(workingState.Metadata.Receipts, res.Receipts...)
-	workingState.Metadata.Logs = append(workingState.Metadata.Logs, res.Logs...)
-	workingState.Metadata.CumulativeGasUsed = res.GasUsed
-
-	// Commit the write transaction (both state and metadata)
-	if err := bc.unsealedBlockDbState.CommitWriteTransaction(); err != nil {
-		return fmt.Errorf("failed to commit write transaction: %w", err)
-	}
+	currentUnsealedBlock.Frags = append(currentUnsealedBlock.Frags, frag)
+	currentUnsealedBlock.LastSequenceNumber = &frag.Seq
+	currentUnsealedBlock.Receipts = append(currentUnsealedBlock.Receipts, res.Receipts...)
+	currentUnsealedBlock.Logs = append(currentUnsealedBlock.Logs, res.Logs...)
+	currentUnsealedBlock.CumulativeGasUsed = res.GasUsed
 
 	return nil
 }

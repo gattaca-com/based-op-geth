@@ -248,7 +248,8 @@ type BlockChain struct {
 	currentSnapBlock     atomic.Pointer[types.Header] // Current head of snap-sync
 	currentFinalBlock    atomic.Pointer[types.Header] // Latest (consensus) finalized block
 	currentSafeBlock     atomic.Pointer[types.Header] // Latest (consensus) safe block
-	unsealedBlockDbState *state.ConcurrentStateDB     // Concurrent StateDB for the current unsealed block (includes metadata)
+	currentUnsealedBlock *types.UnsealedBlock         // Current unsealed block
+	unsealedBlockDbState *state.StateDB               // StateDB for the current unsealed block
 
 	bodyCache     *lru.Cache[common.Hash, *types.Body]
 	bodyRLPCache  *lru.Cache[common.Hash, rlp.RawValue]
@@ -341,6 +342,8 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	bc.currentSnapBlock.Store(nil)
 	bc.currentFinalBlock.Store(nil)
 	bc.currentSafeBlock.Store(nil)
+
+	bc.currentUnsealedBlock = nil
 
 	// Update chain info data metrics
 	chainInfoGauge.Update(metrics.GaugeInfoValue{"chain_id": bc.chainConfig.ChainID.String()})
@@ -650,16 +653,14 @@ func (bc *BlockChain) SetCurrentUnsealedBlock(block *types.UnsealedBlock) error 
 	if err != nil {
 		return err
 	}
-
-	// Create a concurrent StateDB wrapper for thread-safe access
-	// This ensures state and metadata stay synchronized
-	concurrentState := state.NewConcurrentStateDB(newState, block)
-	bc.unsealedBlockDbState = concurrentState
+	bc.unsealedBlockDbState = newState
+	bc.currentUnsealedBlock = block
 
 	return nil
 }
 
 func (bc *BlockChain) ResetCurrentUnsealedBlock() {
+	bc.currentUnsealedBlock = nil
 	bc.unsealedBlockDbState = nil
 }
 

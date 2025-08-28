@@ -205,7 +205,7 @@ func (b *EthAPIBackend) StateAndHeaderByNumber(ctx context.Context, number rpc.B
 	if number == rpc.LatestBlockNumber {
 		stateDb := b.eth.BlockChain().CurrentUnsealedBlockState()
 		if stateDb != nil {
-			return stateDb, b.eth.BlockChain().CurrentUnsealedBlockMetadata().TempHeader(), nil
+			return stateDb, b.eth.BlockChain().CurrentUnsealedBlock().TempHeader(), nil
 		}
 	}
 
@@ -473,5 +473,5 @@ func (b *EthAPIBackend) Genesis() *types.Block {
 }
 
 func (b *EthAPIBackend) GetUnsealedBlock() *types.UnsealedBlock {
-	return b.eth.blockchain.CurrentUnsealedBlockMetadata()
+	return b.eth.blockchain.CurrentUnsealedBlock()
 }

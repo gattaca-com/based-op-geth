@@ -160,7 +160,6 @@ type ConsensusAPI struct {
 	forkchoiceLock sync.Mutex // Lock for the forkChoiceUpdated method
 	newPayloadLock sync.Mutex // Lock for the NewPayload method
 
-	unsealedBlockLock sync.Mutex // Lock for the unsealedBlock
 }
 
 // NewConsensusAPI creates a new consensus api for the given backend.
@@ -1357,13 +1356,13 @@ func validateRequests(requests [][]byte) error {
 func (api *ConsensusAPI) NewFragV0(frag engine.SignedNewFrag) (string, error) {
 	log.Info("new frag received", "forBlock", frag.Frag.BlockNumber, "current", api.eth.BlockChain().CurrentBlock().Number)
 
-	api.unsealedBlockLock.Lock()
+	api.eth.BlockChain().UnsealedBlockLock().Lock()
 	res, err := api.newFragV0(frag)
 	if err != nil {
 		log.Error("failed to insert new frag, discarding unsealed block", "error", err)
 		api.eth.BlockChain().ResetCurrentUnsealedBlock()
 	}
-	api.unsealedBlockLock.Unlock()
+	api.eth.BlockChain().UnsealedBlockLock().Unlock()
 
 	log.Info("new frag handled successfully")
 
@@ -1445,13 +1444,13 @@ func (api *ConsensusAPI) SealFragV0(seal engine.SignedSeal) (string, error) {
 		return engine.VALID, nil
 	}
 
-	api.unsealedBlockLock.Lock()
+	api.eth.BlockChain().UnsealedBlockLock().Lock()
 	res, err := api.sealFragV0(seal)
 	if err != nil {
 		log.Error("failed to seal block, discarding unsealed block", "error", err)
 		api.eth.BlockChain().ResetCurrentUnsealedBlock()
 	}
-	api.unsealedBlockLock.Unlock()
+	api.eth.BlockChain().UnsealedBlockLock().Unlock()
 
 	return res, err
 }
@@ -1521,14 +1520,14 @@ func (api *ConsensusAPI) ValidateSealFragV0(preSealedBlock *types.Block, seal en
 func (api *ConsensusAPI) EnvV0(env engine.SignedEnv) (string, error) {
 	log.Info("env received", "forBlock", env.Env.Number, "current", api.eth.BlockChain().CurrentBlock().Number, "env", env.Env)
 
-	api.unsealedBlockLock.Lock()
+	api.eth.BlockChain().UnsealedBlockLock().Lock()
 	res, err := api.envV0(env)
 	if err != nil {
 		log.Error("failed to open unsealed block, discarding unsealed block", "error", err)
 		api.eth.BlockChain().ResetCurrentUnsealedBlock()
 		log.Error("EnvV0 failed", "error", err)
 	}
-	api.unsealedBlockLock.Unlock()
+	api.eth.BlockChain().UnsealedBlockLock().Unlock()
 
 	log.Info("env handled successfully")
 

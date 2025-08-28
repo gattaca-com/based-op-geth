@@ -203,9 +203,16 @@ func (b *EthAPIBackend) StateAndHeaderByNumber(ctx context.Context, number rpc.B
 
 	// Latest state is the current open unselaed block
 	if number == rpc.LatestBlockNumber {
-		stateDb := b.eth.BlockChain().CurrentUnsealedBlockState()
-		if stateDb != nil {
-			return stateDb, b.eth.BlockChain().CurrentUnsealedBlock().TempHeader(), nil
+		// if the lock is held, we can't access the unsealed block
+		if b.eth.BlockChain().UnsealedBlockLock().TryLock() {
+			defer b.eth.BlockChain().UnsealedBlockLock().Unlock()
+
+			stateDb := b.eth.BlockChain().CurrentUnsealedBlockState()
+			if stateDb != nil {
+				return stateDb.Copy(), b.eth.BlockChain().CurrentUnsealedBlock().TempHeader(), nil
+			}
+		} else {
+			log.Warn("unsealed block lock is held, falling back to latest state")
 		}
 	}
 

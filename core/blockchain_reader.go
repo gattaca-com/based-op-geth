@@ -62,28 +62,12 @@ func (bc *BlockChain) CurrentSafeBlock() *types.Header {
 	return bc.currentSafeBlock.Load()
 }
 
-func (bc *BlockChain) CurrentUnsealedBlockState() *state.StateDB {
-	if bc.unsealedBlockDbState == nil {
-		return nil
-	}
-	snapshot := bc.unsealedBlockDbState.GetReadSnapshot()
-	if snapshot == nil {
-		return nil
-	}
-	return snapshot.StateDB
+func (bc *BlockChain) CurrentUnsealedBlock() *types.UnsealedBlock {
+	return bc.currentUnsealedBlock
 }
 
-// CurrentUnsealedBlockMetadata returns the current unsealed block metadata
-// This is safe to call concurrently and will always be in sync with the state
-func (bc *BlockChain) CurrentUnsealedBlockMetadata() *types.UnsealedBlock {
-	if bc.unsealedBlockDbState == nil {
-		return nil
-	}
-	snapshot := bc.unsealedBlockDbState.GetReadSnapshot()
-	if snapshot == nil {
-		return nil
-	}
-	return snapshot.Metadata
+func (bc *BlockChain) CurrentUnsealedBlockState() *state.StateDB {
+	return bc.unsealedBlockDbState
 }
 
 // HasHeader checks if a block header is present in the database or not, caching

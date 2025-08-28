@@ -346,6 +346,8 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	bc.currentFinalBlock.Store(nil)
 	bc.currentSafeBlock.Store(nil)
 
+	bc.currentUnsealedBlock = nil
+
 	// Update chain info data metrics
 	chainInfoGauge.Update(metrics.GaugeInfoValue{"chain_id": bc.chainConfig.ChainID.String()})
 
@@ -654,16 +656,14 @@ func (bc *BlockChain) SetCurrentUnsealedBlock(block *types.UnsealedBlock) error 
 	if err != nil {
 		return err
 	}
-
-	// Create a concurrent StateDB wrapper for thread-safe access
-	// This ensures state and metadata stay synchronized
-	concurrentState := state.NewConcurrentStateDB(newState, block)
-	bc.unsealedBlockDbState = concurrentState
+	bc.unsealedBlockDbState = newState
+	bc.currentUnsealedBlock = block
 
 	return nil
 }
 
 func (bc *BlockChain) ResetCurrentUnsealedBlock() {
+	bc.currentUnsealedBlock = nil
 	bc.unsealedBlockDbState = nil
 	bc.fcuCountSinceUnsealReset = 0
 }

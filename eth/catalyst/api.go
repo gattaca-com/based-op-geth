@@ -387,7 +387,7 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 	if rawdb.ReadCanonicalHash(api.eth.ChainDb(), block.NumberU64()) != update.HeadBlockHash {
 		// Block is not canonical, set head.
 		if latestValid, err := api.eth.BlockChain().SetCanonical(block); err != nil {
-			bc := api.eth.BlockChain().CurrentUnsealedBlockMetadata()
+			bc := api.eth.BlockChain().CurrentUnsealedBlock()
 			if bc != nil {
 				if bc.Env.Number == block.NumberU64() {
 					log.Info("Ignoring current unsealed block", "number", block.NumberU64(), "hash", update.HeadBlockHash, "age", common.PrettyAge(time.Unix(int64(block.Time()), 0)), "have", api.eth.BlockChain().CurrentBlock().Number)
@@ -1372,13 +1372,13 @@ func (api *ConsensusAPI) NewFragV0(frag engine.SignedNewFrag) (string, error) {
 }
 
 func (api *ConsensusAPI) newFragV0(f engine.SignedNewFrag) (string, error) {
-	ub := api.eth.BlockChain().CurrentUnsealedBlockMetadata()
+	ub := api.eth.BlockChain().CurrentUnsealedBlock()
 
 	if err := api.ValidateNewFragV0(f, ub); err != nil {
 		log.Error("frag is invalid", "error", err)
 		return engine.INVALID, err
 	}
-	if f.Frag.BlockNumber < api.eth.BlockChain().CurrentUnsealedBlockMetadata().Env.Number {
+	if f.Frag.BlockNumber < api.eth.BlockChain().CurrentUnsealedBlock().Env.Number {
 		return engine.VALID, nil
 	}
 
@@ -1441,7 +1441,7 @@ func (api *ConsensusAPI) ValidateNewFragV0(frag engine.SignedNewFrag, currentUns
 
 func (api *ConsensusAPI) SealFragV0(seal engine.SignedSeal) (string, error) {
 	log.Info("seal received", "forBlock", seal.Seal.BlockNumber, "current", api.eth.BlockChain().CurrentBlock().Number, "seal", seal.Seal)
-	if api.eth.BlockChain().CurrentUnsealedBlockMetadata() != nil && api.eth.BlockChain().CurrentUnsealedBlockMetadata().Env.Number > seal.Seal.BlockNumber {
+	if api.eth.BlockChain().CurrentUnsealedBlock() != nil && api.eth.BlockChain().CurrentUnsealedBlock().Env.Number > seal.Seal.BlockNumber {
 		log.Info("seal was outdated, dropping")
 		return engine.VALID, nil
 	}
@@ -1481,7 +1481,7 @@ func (api *ConsensusAPI) sealFragV0(seal engine.SignedSeal) (string, error) {
 }
 
 func (api *ConsensusAPI) ValidateSealFragV0(preSealedBlock *types.Block, seal engine.SignedSeal) error {
-	if !types.IsOpened(api.eth.BlockChain().CurrentUnsealedBlockMetadata()) {
+	if !types.IsOpened(api.eth.BlockChain().CurrentUnsealedBlock()) {
 		return errors.New("no unsealed block in progress")
 	}
 
@@ -1513,8 +1513,8 @@ func (api *ConsensusAPI) ValidateSealFragV0(preSealedBlock *types.Block, seal en
 		return fmt.Errorf("gas limit mismatch, expected %v, got %v", preSealedBlock.GasLimit(), seal.Seal.GasLimit)
 	}
 
-	if len(api.eth.BlockChain().CurrentUnsealedBlockMetadata().Frags) != int(seal.Seal.TotalFrags) {
-		return fmt.Errorf("total frags mismatch, expected %v, got %v", len(api.eth.BlockChain().CurrentUnsealedBlockMetadata().Frags), seal.Seal.TotalFrags)
+	if len(api.eth.BlockChain().CurrentUnsealedBlock().Frags) != int(seal.Seal.TotalFrags) {
+		return fmt.Errorf("total frags mismatch, expected %v, got %v", len(api.eth.BlockChain().CurrentUnsealedBlock().Frags), seal.Seal.TotalFrags)
 	}
 
 	return nil
@@ -1540,7 +1540,7 @@ func (api *ConsensusAPI) EnvV0(env engine.SignedEnv) (string, error) {
 
 func (api *ConsensusAPI) envV0(env engine.SignedEnv) (string, error) {
 	if err := api.ValidateEnvV0(env); err != nil {
-		if api.eth.BlockChain().CurrentUnsealedBlockMetadata() != nil && api.eth.BlockChain().CurrentUnsealedBlockMetadata().Env.Number < env.Env.Number {
+		if api.eth.BlockChain().CurrentUnsealedBlock() != nil && api.eth.BlockChain().CurrentUnsealedBlock().Env.Number < env.Env.Number {
 			api.eth.BlockChain().ResetCurrentUnsealedBlock()
 		} else {
 			return engine.INVALID, err
@@ -1573,7 +1573,7 @@ func (api *ConsensusAPI) ValidateEnvV0(env engine.SignedEnv) error {
 	parentHeader := parent.Header()
 
 	// Check that there's no unsealed block in progress
-	if api.eth.BlockChain().CurrentUnsealedBlockMetadata() != nil {
+	if api.eth.BlockChain().CurrentUnsealedBlock() != nil {
 		return errors.New("cannot open a new unsealed block while there's one already in progress")
 	}
 

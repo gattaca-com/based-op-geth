@@ -38,6 +38,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/internal/version"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/miner"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/params/forks"
@@ -160,6 +161,10 @@ type ConsensusAPI struct {
 	forkchoiceLock sync.Mutex // Lock for the forkChoiceUpdated method
 	newPayloadLock sync.Mutex // Lock for the NewPayload method
 
+	// Metrics
+	newFragV0Time  *metrics.Timer
+	sealFragV0Time *metrics.Timer
+	envV0Time      *metrics.Timer
 }
 
 // NewConsensusAPI creates a new consensus api for the given backend.
@@ -181,6 +186,11 @@ func newConsensusAPIWithoutHeartbeat(eth *eth.Ethereum) *ConsensusAPI {
 		localBlocks:       newPayloadQueue(),
 		invalidBlocksHits: make(map[common.Hash]int),
 		invalidTipsets:    make(map[common.Hash]*types.Header),
+
+		// Metrics
+		newFragV0Time:  metrics.GetOrRegisterTimer("engine/frag/new", nil),
+		sealFragV0Time: metrics.GetOrRegisterTimer("engine/frag/seal", nil),
+		envV0Time:      metrics.GetOrRegisterTimer("engine/frag/env", nil),
 	}
 	eth.Downloader().SetBadBlockCallback(api.setInvalidAncestor)
 	return api
@@ -1357,6 +1367,7 @@ func validateRequests(requests [][]byte) error {
 func (api *ConsensusAPI) NewFragV0(frag engine.SignedNewFrag) (string, error) {
 	log.Info("new frag received", "forBlock", frag.Frag.BlockNumber, "current", api.eth.BlockChain().CurrentBlock().Number)
 
+	start := time.Now()
 	api.eth.BlockChain().UnsealedBlockLock().Lock()
 	defer api.eth.BlockChain().UnsealedBlockLock().Unlock()
 
@@ -1366,7 +1377,8 @@ func (api *ConsensusAPI) NewFragV0(frag engine.SignedNewFrag) (string, error) {
 		api.eth.BlockChain().ResetCurrentUnsealedBlock()
 	}
 
-	log.Info("new frag handled successfully")
+	api.newFragV0Time.Update(time.Since(start))
+	log.Info("new frag handled successfully", "time", time.Since(start))
 
 	return res, err
 }
@@ -1446,6 +1458,7 @@ func (api *ConsensusAPI) SealFragV0(seal engine.SignedSeal) (string, error) {
 		return engine.VALID, nil
 	}
 
+	start := time.Now()
 	api.eth.BlockChain().UnsealedBlockLock().Lock()
 	defer api.eth.BlockChain().UnsealedBlockLock().Unlock()
 
@@ -1454,6 +1467,9 @@ func (api *ConsensusAPI) SealFragV0(seal engine.SignedSeal) (string, error) {
 		log.Error("failed to seal block, discarding unsealed block", "error", err)
 		api.eth.BlockChain().ResetCurrentUnsealedBlock()
 	}
+
+	api.sealFragV0Time.Update(time.Since(start))
+	log.Info("seal handled successfully", "time", time.Since(start))
 
 	return res, err
 }
@@ -1523,6 +1539,7 @@ func (api *ConsensusAPI) ValidateSealFragV0(preSealedBlock *types.Block, seal en
 func (api *ConsensusAPI) EnvV0(env engine.SignedEnv) (string, error) {
 	log.Info("env received", "forBlock", env.Env.Number, "current", api.eth.BlockChain().CurrentBlock().Number, "env", env.Env)
 
+	start := time.Now()
 	api.eth.BlockChain().UnsealedBlockLock().Lock()
 	defer api.eth.BlockChain().UnsealedBlockLock().Unlock()
 
@@ -1533,7 +1550,8 @@ func (api *ConsensusAPI) EnvV0(env engine.SignedEnv) (string, error) {
 		log.Error("EnvV0 failed", "error", err)
 	}
 
-	log.Info("env handled successfully")
+	api.envV0Time.Update(time.Since(start))
+	log.Info("env handled successfully", "time", time.Since(start))
 
 	return res, err
 }

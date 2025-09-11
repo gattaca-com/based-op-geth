@@ -378,6 +378,7 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 		}
 	}
 	valid := func(id *engine.PayloadID) engine.ForkChoiceResponse {
+		api.eth.BlockChain().HandleForkchoiceUpdate()
 		return engine.ForkChoiceResponse{
 			PayloadStatus: engine.PayloadStatusV1{Status: engine.VALID, LatestValidHash: &update.HeadBlockHash},
 			PayloadID:     id,

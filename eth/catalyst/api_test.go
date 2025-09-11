@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
@@ -1875,9 +1876,12 @@ func TestSealFragV0(t *testing.T) {
 			StateRoot:        common.Hash{},
 			BlockHash:        common.Hash{},
 		}}
-	err := api.SealFragV0(info)
+	status, err := api.SealFragV0(info)
 	if err != nil {
 		t.Fatalf("error sealing frag: %v", err)
+	}
+	if status != engine.VALID {
+		t.Fatalf("unexpected status: %v", status)
 	}
 }
 
@@ -1895,7 +1899,7 @@ func TestEnvV0(t *testing.T) {
 			Timestamp:   2,
 			GasLimit:    3,
 			Basefee:     4,
-			Difficulty:  (*hexutil.Big)(new(big.Int).SetUint64(123123123123123)),
+			Difficulty:  uint256.NewInt(123123123123123),
 			Prevrandao:  common.HexToHash("0x0102030405060708091011121314151617181920212223242526272829303132"),
 		}}
 	result, err := api.EnvV0(info)

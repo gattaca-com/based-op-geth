@@ -244,12 +244,14 @@ type BlockChain struct {
 	// Readers don't need to take it, they can just read the database.
 	chainmu *syncx.ClosableMutex
 
-	currentBlock         atomic.Pointer[types.Header] // Current head of the chain
-	currentSnapBlock     atomic.Pointer[types.Header] // Current head of snap-sync
-	currentFinalBlock    atomic.Pointer[types.Header] // Latest (consensus) finalized block
-	currentSafeBlock     atomic.Pointer[types.Header] // Latest (consensus) safe block
-	currentUnsealedBlock *types.UnsealedBlock         // Current unsealed block
-	unsealedBlockDbState *state.StateDB               // StateDB for the current unsealed block
+	currentBlock      atomic.Pointer[types.Header] // Current head of the chain
+	currentSnapBlock  atomic.Pointer[types.Header] // Current head of snap-sync
+	currentFinalBlock atomic.Pointer[types.Header] // Latest (consensus) finalized block
+	currentSafeBlock  atomic.Pointer[types.Header] // Latest (consensus) safe block
+
+	currentUnsealedBlock *types.UnsealedBlock // Current unsealed block
+	unsealedBlockDbState *state.StateDB       // StateDB for the current unsealed block
+	unsealedBlockLock    sync.Mutex           // Lock for the unsealedBlock
 
 	bodyCache     *lru.Cache[common.Hash, *types.Body]
 	bodyRLPCache  *lru.Cache[common.Hash, rlp.RawValue]
@@ -2550,4 +2552,9 @@ func (bc *BlockChain) SetTrieFlushInterval(interval time.Duration) {
 // GetTrieFlushInterval gets the in-memory tries flushAlloc interval
 func (bc *BlockChain) GetTrieFlushInterval() time.Duration {
 	return time.Duration(bc.flushInterval.Load())
+}
+
+// UnsealedBlockLock returns a pointer to the unsealed block lock
+func (bc *BlockChain) UnsealedBlockLock() *sync.Mutex {
+	return &bc.unsealedBlockLock
 }

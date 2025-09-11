@@ -251,7 +251,7 @@ type BlockChain struct {
 
 	currentUnsealedBlock *types.UnsealedBlock // Current unsealed block
 	unsealedBlockDbState *state.StateDB       // StateDB for the current unsealed block
-	unsealedBlockLock    sync.Mutex           // Lock for the unsealedBlock
+	unsealedBlockLock    sync.RWMutex         // Lock for the unsealedBlock
 
 	bodyCache     *lru.Cache[common.Hash, *types.Body]
 	bodyRLPCache  *lru.Cache[common.Hash, rlp.RawValue]
@@ -2555,6 +2555,6 @@ func (bc *BlockChain) GetTrieFlushInterval() time.Duration {
 }
 
 // UnsealedBlockLock returns a pointer to the unsealed block lock
-func (bc *BlockChain) UnsealedBlockLock() *sync.Mutex {
+func (bc *BlockChain) UnsealedBlockLock() *sync.RWMutex {
 	return &bc.unsealedBlockLock
 }

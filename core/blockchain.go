@@ -249,9 +249,10 @@ type BlockChain struct {
 	currentFinalBlock atomic.Pointer[types.Header] // Latest (consensus) finalized block
 	currentSafeBlock  atomic.Pointer[types.Header] // Latest (consensus) safe block
 
-	currentUnsealedBlock *types.UnsealedBlock // Current unsealed block
-	unsealedBlockDbState *state.StateDB       // StateDB for the current unsealed block
-	unsealedBlockLock    sync.RWMutex         // Lock for the unsealedBlock
+	currentUnsealedBlock     *types.UnsealedBlock // Current unsealed block
+	unsealedBlockDbState     *state.StateDB       // StateDB for the current unsealed block
+	unsealedBlockLock        sync.RWMutex         // Lock for the unsealedBlock
+	fcuCountSinceUnsealReset int                  // Number of forkchoice updates since the last unsealed block reset
 
 	bodyCache     *lru.Cache[common.Hash, *types.Body]
 	bodyRLPCache  *lru.Cache[common.Hash, rlp.RawValue]
@@ -664,6 +665,23 @@ func (bc *BlockChain) SetCurrentUnsealedBlock(block *types.UnsealedBlock) error 
 func (bc *BlockChain) ResetCurrentUnsealedBlock() {
 	bc.currentUnsealedBlock = nil
 	bc.unsealedBlockDbState = nil
+	bc.fcuCountSinceUnsealReset = 0
+}
+
+func (bc *BlockChain) HandleForkchoiceUpdate() {
+	bc.UnsealedBlockLock().Lock()
+	defer bc.UnsealedBlockLock().Unlock()
+	if bc.currentUnsealedBlock == nil {
+		return
+	}
+	bc.fcuCountSinceUnsealReset++
+	if bc.fcuCountSinceUnsealReset == 2 {
+		// Reset the unsealed block after two forkchoice updates to avoid
+		// holding an invalid unsealed block for too long.
+		// This happens when the gateway become unresponsive.
+		log.Warn("Resetting unsealed block after two forkchoice updates")
+		bc.ResetCurrentUnsealedBlock()
+	}
 }
 
 // rewindHashHead implements the logic of rewindHead in the context of hash scheme.

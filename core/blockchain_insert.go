@@ -210,7 +210,7 @@ func (bc *BlockChain) InsertNewFrag(frag types.Frag) error {
 		Withdrawals:  []*types.Withdrawal{},
 	})
 
-	res, err := bc.Processor().ProcessWithCumulativeGas(block, bc.unsealedBlockDbState, bc.vmConfig, &bc.currentUnsealedBlock.CumulativeGasUsed)
+	res, err := bc.Processor().ProcessWithCumulativeGas(block, bc.unsealedBlockDbState, bc.cfg.VmConfig, &bc.currentUnsealedBlock.CumulativeGasUsed)
 
 	if err != nil {
 		return err

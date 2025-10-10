@@ -62,6 +62,9 @@ type PayloadAttributes struct {
 	// and contains encoded EIP-1559 parameters. See:
 	// https://github.com/ethereum-optimism/specs/blob/main/specs/protocol/holocene/exec-engine.md#eip1559params-encoding
 	EIP1559Params []byte `json:"eip1559Params,omitempty" gencodec:"optional"`
+	// MinBaseFee is a field for rollups implementing the minimum base fee feature.
+	// See https://github.com/ethereum-optimism/specs/blob/main/specs/protocol/jovian/exec-engine.md#minimum-base-fee-in-payloadattributesv3
+	MinBaseFee *uint64 `json:"minBaseFee,omitempty" gencodec:"optional"`
 }
 
 // JSON type overrides for PayloadAttributes.
@@ -148,6 +151,11 @@ type BlobAndProofV1 struct {
 	Proof hexutil.Bytes `json:"proof"`
 }
 
+type BlobAndProofV2 struct {
+	Blob       hexutil.Bytes   `json:"blob"`
+	CellProofs []hexutil.Bytes `json:"proofs"`
+}
+
 // JSON type overrides for ExecutionPayloadEnvelope.
 type executionPayloadEnvelopeMarshaling struct {
 	BlockValue *hexutil.Big
@@ -156,7 +164,7 @@ type executionPayloadEnvelopeMarshaling struct {
 
 type PayloadStatusV1 struct {
 	Status          string         `json:"status"`
-	Witness         *hexutil.Bytes `json:"witness"`
+	Witness         *hexutil.Bytes `json:"witness,omitempty"`
 	LatestValidHash *common.Hash   `json:"latestValidHash"`
 	ValidationError *string        `json:"validationError"`
 }
@@ -361,8 +369,13 @@ func BlockToExecutableData(block *types.Block, fees *big.Int, sidecars []*types.
 		BlobGasUsed:      block.BlobGasUsed(),
 		ExcessBlobGas:    block.ExcessBlobGas(),
 		ExecutionWitness: block.ExecutionWitness(),
-		// OP-Stack addition: withdrawals list alone does not express the withdrawals storage-root.
-		WithdrawalsRoot: block.WithdrawalsRoot(),
+	}
+
+	// OP-Stack: only Isthmus execution payloads must set the withdrawals root.
+	// They are guaranteed to not be the empty withdrawals hash, which is set pre-Isthmus (post-Canyon).
+	if wr := block.WithdrawalsRoot(); wr != nil && *wr != types.EmptyWithdrawalsHash {
+		wr := *wr
+		data.WithdrawalsRoot = &wr
 	}
 
 	// Add blobs.
@@ -375,7 +388,9 @@ func BlockToExecutableData(block *types.Block, fees *big.Int, sidecars []*types.
 		for j := range sidecar.Blobs {
 			bundle.Blobs = append(bundle.Blobs, hexutil.Bytes(sidecar.Blobs[j][:]))
 			bundle.Commitments = append(bundle.Commitments, hexutil.Bytes(sidecar.Commitments[j][:]))
-			bundle.Proofs = append(bundle.Proofs, hexutil.Bytes(sidecar.Proofs[j][:]))
+		}
+		for _, proof := range sidecar.Proofs {
+			bundle.Proofs = append(bundle.Proofs, hexutil.Bytes(proof[:]))
 		}
 	}
 

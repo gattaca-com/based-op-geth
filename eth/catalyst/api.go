@@ -1373,6 +1373,8 @@ func (api *ConsensusAPI) ValidateEnvV0(env engine.SignedEnv) error {
 	}
 
 	return nil
+}
+
 // paramsErr is a helper function for creating an InvalidPayloadAttributes
 // Engine API error.
 func paramsErr(msg string) error {

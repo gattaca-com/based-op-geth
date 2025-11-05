@@ -70,7 +70,7 @@ var Defaults = Config{
 	RPCEVMTimeout:       5 * time.Second,
 	GPO:                 FullNodeGPO,
 	RPCTxFeeCap:         1, // 1 ether
-	RPCUnsealedAsLatest: true,
+	RPCUnsealedAsLatest: false,
 }
 
 //go:generate go run github.com/fjl/gencodec -type Config -formats toml -out gen_config.go

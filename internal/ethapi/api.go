@@ -318,8 +318,10 @@ func (api *BlockChainAPI) ChainId() *hexutil.Big {
 
 // BlockNumber returns the block number of the chain head.
 func (api *BlockChainAPI) BlockNumber() hexutil.Uint64 {
-	if unsealed := api.b.GetUnsealedBlock(); unsealed != nil {
-		return hexutil.Uint64(unsealed.Env.Number)
+	if api.b.UnsealedAsLatest() {
+		if unsealed := api.b.GetUnsealedBlock(); unsealed != nil {
+			return hexutil.Uint64(unsealed.Env.Number)
+		}
 	}
 
 	header, _ := api.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber) // latest header should always be available

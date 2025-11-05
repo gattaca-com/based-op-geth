@@ -52,6 +52,7 @@ type EthAPIBackend struct {
 	extRPCEnabled       bool
 	allowUnprotectedTxs bool
 	disableTxPool       bool
+	unsealedAsLatest    bool
 	eth                 *Ethereum
 	gpo                 *gasprice.Oracle
 }
@@ -235,7 +236,7 @@ func (b *EthAPIBackend) StateAndHeaderByNumber(ctx context.Context, number rpc.B
 	}
 
 	// Latest state is the current open unselaed block
-	if number == rpc.LatestBlockNumber {
+	if b.unsealedAsLatest && number == rpc.LatestBlockNumber {
 		// if the lock is held, we can't access the unsealed block state
 		// (it means someone is writing to it, so we wait for them to finish)
 		b.eth.BlockChain().UnsealedBlockLock().RLock()
@@ -544,4 +545,8 @@ func (b *EthAPIBackend) Genesis() *types.Block {
 
 func (b *EthAPIBackend) GetUnsealedBlock() *types.UnsealedBlock {
 	return b.eth.blockchain.CurrentUnsealedBlock()
+}
+
+func (b *EthAPIBackend) UnsealedAsLatest() bool {
+	return b.unsealedAsLatest
 }

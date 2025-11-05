@@ -273,6 +273,10 @@ func makeFullNode(ctx *cli.Context) *node.Node {
 		cfg.Eth.OverrideVerkle = &v
 	}
 
+	if ctx.IsSet(utils.UnsealedAsLatestFlag.Name) {
+		cfg.Eth.RPCUnsealedAsLatest = ctx.Bool(utils.UnsealedAsLatestFlag.Name)
+	}
+
 	// Start metrics export if enabled
 	utils.SetupMetrics(&cfg.Metrics)
 

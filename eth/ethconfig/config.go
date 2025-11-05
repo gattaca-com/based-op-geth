@@ -50,26 +50,27 @@ var FullNodeGPO = gasprice.Config{
 
 // Defaults contains default settings for use on the Ethereum main net.
 var Defaults = Config{
-	HistoryMode:        history.KeepAll,
-	SyncMode:           SnapSync,
-	NetworkId:          0, // enable auto configuration of networkID == chainID
-	TxLookupLimit:      2350000,
-	TransactionHistory: 2350000,
-	LogHistory:         2350000,
-	StateHistory:       params.FullImmutabilityThreshold,
-	DatabaseCache:      512,
-	TrieCleanCache:     154,
-	TrieDirtyCache:     256,
-	TrieTimeout:        60 * time.Minute,
-	SnapshotCache:      102,
-	FilterLogCacheSize: 32,
-	Miner:              miner.DefaultConfig,
-	TxPool:             legacypool.DefaultConfig,
-	BlobPool:           blobpool.DefaultConfig,
-	RPCGasCap:          50000000,
-	RPCEVMTimeout:      5 * time.Second,
-	GPO:                FullNodeGPO,
-	RPCTxFeeCap:        1, // 1 ether
+	HistoryMode:         history.KeepAll,
+	SyncMode:            SnapSync,
+	NetworkId:           0, // enable auto configuration of networkID == chainID
+	TxLookupLimit:       2350000,
+	TransactionHistory:  2350000,
+	LogHistory:          2350000,
+	StateHistory:        params.FullImmutabilityThreshold,
+	DatabaseCache:       512,
+	TrieCleanCache:      154,
+	TrieDirtyCache:      256,
+	TrieTimeout:         60 * time.Minute,
+	SnapshotCache:       102,
+	FilterLogCacheSize:  32,
+	Miner:               miner.DefaultConfig,
+	TxPool:              legacypool.DefaultConfig,
+	BlobPool:            blobpool.DefaultConfig,
+	RPCGasCap:           50000000,
+	RPCEVMTimeout:       5 * time.Second,
+	GPO:                 FullNodeGPO,
+	RPCTxFeeCap:         1, // 1 ether
+	RPCUnsealedAsLatest: true,
 }
 
 //go:generate go run github.com/fjl/gencodec -type Config -formats toml -out gen_config.go
@@ -158,6 +159,10 @@ type Config struct {
 	// RPCTxFeeCap is the global transaction fee (price * gas limit) cap for
 	// send-transaction variants. The unit is ether.
 	RPCTxFeeCap float64
+
+	// RPCUnsealedAsLatest indicates whether RPC calls should consider the
+	// unsealed block as the latest block.
+	RPCUnsealedAsLatest bool
 
 	// OverrideOsaka (TODO: remove after the fork)
 	OverrideOsaka *uint64 `toml:",omitempty"`

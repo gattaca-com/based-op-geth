@@ -1676,18 +1676,18 @@ func (api *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash com
 func (api *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
 	found, tx, blockHash, blockNumber, index := api.b.GetCanonicalTransaction(hash)
 	if !found {
+		// if api.b.UnsealedAsLatest() {
 		// Transaction may be in the current unsealed block
-		if api.b.UnsealedAsLatest() {
-			if ub := api.b.GetUnsealedBlock(); ub != nil {
-				for i, receipt := range ub.Receipts {
-					if receipt.TxHash.Cmp(hash) == 0 {
-						signer := types.MakeSigner(api.b.ChainConfig(), new(big.Int).SetUint64(ub.Env.Number), ub.Env.Timestamp)
-						log.Info("Sending receipt from Unsealed block", "txHash", hash)
-						return marshalReceipt(receipt, ub.Hash, ub.Env.Number, signer, ub.Transactions()[i], i, new(big.Int).SetUint64(ub.Env.Basefee), api.b.ChainConfig()), nil
-					}
+		if ub := api.b.GetUnsealedBlock(); ub != nil {
+			for i, receipt := range ub.Receipts {
+				if receipt.TxHash.Cmp(hash) == 0 {
+					signer := types.MakeSigner(api.b.ChainConfig(), new(big.Int).SetUint64(ub.Env.Number), ub.Env.Timestamp)
+					log.Info("Sending receipt from Unsealed block", "txHash", hash)
+					return marshalReceipt(receipt, ub.Hash, ub.Env.Number, signer, ub.Transactions()[i], i, new(big.Int).SetUint64(ub.Env.Basefee), api.b.ChainConfig()), nil
 				}
 			}
 		}
+		// }
 
 		// Make sure indexer is done.
 		if !api.b.TxIndexDone() {

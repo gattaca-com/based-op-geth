@@ -1677,13 +1677,14 @@ func (api *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash commo
 	found, tx, blockHash, blockNumber, index := api.b.GetCanonicalTransaction(hash)
 	if !found {
 		// Transaction may be in the current unsealed block
-		ub := api.b.GetUnsealedBlock()
-		if ub != nil {
-			for i, receipt := range ub.Receipts {
-				if receipt.TxHash.Cmp(hash) == 0 {
-					signer := types.MakeSigner(api.b.ChainConfig(), new(big.Int).SetUint64(ub.Env.Number), ub.Env.Timestamp)
-					log.Info("Sending receipt from Unsealed block", "txHash", hash)
-					return marshalReceipt(receipt, ub.Hash, ub.Env.Number, signer, ub.Transactions()[i], i, new(big.Int).SetUint64(ub.Env.Basefee), api.b.ChainConfig()), nil
+		if api.b.UnsealedAsLatest() {
+			if ub := api.b.GetUnsealedBlock(); ub != nil {
+				for i, receipt := range ub.Receipts {
+					if receipt.TxHash.Cmp(hash) == 0 {
+						signer := types.MakeSigner(api.b.ChainConfig(), new(big.Int).SetUint64(ub.Env.Number), ub.Env.Timestamp)
+						log.Info("Sending receipt from Unsealed block", "txHash", hash)
+						return marshalReceipt(receipt, ub.Hash, ub.Env.Number, signer, ub.Transactions()[i], i, new(big.Int).SetUint64(ub.Env.Basefee), api.b.ChainConfig()), nil
+					}
 				}
 			}
 		}
@@ -1692,6 +1693,7 @@ func (api *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash commo
 		if !api.b.TxIndexDone() {
 			return nil, NewTxIndexingError()
 		}
+
 		// No such tx.
 		return nil, nil
 	}

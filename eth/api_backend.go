@@ -225,20 +225,7 @@ func (b *EthAPIBackend) Pending() (*types.Block, types.Receipts, *state.StateDB)
 }
 
 func (b *EthAPIBackend) StateAndHeaderByNumber(ctx context.Context, number rpc.BlockNumber) (*state.StateDB, *types.Header, error) {
-	// Pending state is only known by the miner
-	if number == rpc.PendingBlockNumber {
-		block, _, state := b.eth.miner.Pending()
-		if block != nil && state != nil {
-			return state, block.Header(), nil
-		} else {
-			number = rpc.LatestBlockNumber // fall back to latest state
-		}
-	}
-
-	// Latest state is the current open unselaed block
-	if b.unsealedAsLatest && number == rpc.LatestBlockNumber {
-		// if the lock is held, we can't access the unsealed block state
-		// (it means someone is writing to it, so we wait for them to finish)
+	if number == rpc.PendingBlockNumber || (b.unsealedAsLatest && number == rpc.LatestBlockNumber) {
 		b.eth.BlockChain().UnsealedBlockLock().RLock()
 		stateDb := b.eth.BlockChain().CurrentUnsealedBlockState()
 		if stateDb != nil {

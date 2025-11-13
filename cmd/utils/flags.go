@@ -676,6 +676,11 @@ var (
 		Usage:    "Path to a JWT secret to use for authenticated RPC endpoints",
 		Category: flags.APICategory,
 	}
+	UnsealedAsLatestFlag = &cli.BoolFlag{
+		Name:     "unsealedaslatest",
+		Usage:    "RPC methods return the latest unsealed state (default: sealed state)",
+		Category: flags.APICategory,
+	}
 
 	// Logging and debug settings
 	EthStatsURLFlag = &cli.StringFlag{

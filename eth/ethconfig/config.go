@@ -50,27 +50,26 @@ var FullNodeGPO = gasprice.Config{
 
 // Defaults contains default settings for use on the Ethereum main net.
 var Defaults = Config{
-	HistoryMode:         history.KeepAll,
-	SyncMode:            SnapSync,
-	NetworkId:           0, // enable auto configuration of networkID == chainID
-	TxLookupLimit:       2350000,
-	TransactionHistory:  2350000,
-	LogHistory:          2350000,
-	StateHistory:        params.FullImmutabilityThreshold,
-	DatabaseCache:       512,
-	TrieCleanCache:      154,
-	TrieDirtyCache:      256,
-	TrieTimeout:         60 * time.Minute,
-	SnapshotCache:       102,
-	FilterLogCacheSize:  32,
-	Miner:               miner.DefaultConfig,
-	TxPool:              legacypool.DefaultConfig,
-	BlobPool:            blobpool.DefaultConfig,
-	RPCGasCap:           50000000,
-	RPCEVMTimeout:       5 * time.Second,
-	GPO:                 FullNodeGPO,
-	RPCTxFeeCap:         1, // 1 ether
-	RPCUnsealedAsLatest: false,
+	HistoryMode:        history.KeepAll,
+	SyncMode:           SnapSync,
+	NetworkId:          0, // enable auto configuration of networkID == chainID
+	TxLookupLimit:      2350000,
+	TransactionHistory: 2350000,
+	LogHistory:         2350000,
+	StateHistory:       params.FullImmutabilityThreshold,
+	DatabaseCache:      512,
+	TrieCleanCache:     154,
+	TrieDirtyCache:     256,
+	TrieTimeout:        60 * time.Minute,
+	SnapshotCache:      102,
+	FilterLogCacheSize: 32,
+	Miner:              miner.DefaultConfig,
+	TxPool:             legacypool.DefaultConfig,
+	BlobPool:           blobpool.DefaultConfig,
+	RPCGasCap:          50000000,
+	RPCEVMTimeout:      5 * time.Second,
+	GPO:                FullNodeGPO,
+	RPCTxFeeCap:        1, // 1 ether
 }
 
 //go:generate go run github.com/fjl/gencodec -type Config -formats toml -out gen_config.go

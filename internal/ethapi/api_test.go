@@ -813,6 +813,10 @@ func (b testBackend) GetUnsealedBlock() *types.UnsealedBlock {
 	panic("implement me")
 }
 
+func (b testBackend) UnsealedAsLatest() bool {
+	panic("implement me")
+}
+
 func TestEstimateGas(t *testing.T) {
 	t.Parallel()
 	// Initialize test accounts
@@ -3899,7 +3903,7 @@ func TestCreateAccessListWithStateOverrides(t *testing.T) {
 				Balance: (*hexutil.Big)(big.NewInt(1000000000000000000)),
 				Nonce:   &nonce,
 				State: map[common.Hash]common.Hash{
-					{}: common.HexToHash("0x000000000000000000000000000000000000000000000000000000000000002a"),
+					common.Hash{}: common.HexToHash("0x000000000000000000000000000000000000000000000000000000000000002a"),
 				},
 			},
 		}

@@ -118,6 +118,7 @@ var caps = []string{
 	"engine_sealFragV0",
 	"engine_envV0",
 }
+
 var (
 	// Number of blobs requested via getBlobsV2
 	getBlobsRequestedCounter = metrics.NewRegisteredCounter("engine/getblobs/requested", nil)

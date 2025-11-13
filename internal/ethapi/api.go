@@ -318,8 +318,10 @@ func (api *BlockChainAPI) ChainId() *hexutil.Big {
 
 // BlockNumber returns the block number of the chain head.
 func (api *BlockChainAPI) BlockNumber() hexutil.Uint64 {
-	if unsealed := api.b.GetUnsealedBlock(); unsealed != nil {
-		return hexutil.Uint64(unsealed.Env.Number)
+	if api.b.UnsealedAsLatest() {
+		if unsealed := api.b.GetUnsealedBlock(); unsealed != nil {
+			return hexutil.Uint64(unsealed.Env.Number)
+		}
 	}
 
 	header, _ := api.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber) // latest header should always be available
@@ -1674,9 +1676,9 @@ func (api *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash com
 func (api *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
 	found, tx, blockHash, blockNumber, index := api.b.GetCanonicalTransaction(hash)
 	if !found {
+		// if api.b.UnsealedAsLatest() {
 		// Transaction may be in the current unsealed block
-		ub := api.b.GetUnsealedBlock()
-		if ub != nil {
+		if ub := api.b.GetUnsealedBlock(); ub != nil {
 			for i, receipt := range ub.Receipts {
 				if receipt.TxHash.Cmp(hash) == 0 {
 					signer := types.MakeSigner(api.b.ChainConfig(), new(big.Int).SetUint64(ub.Env.Number), ub.Env.Timestamp)
@@ -1685,11 +1687,13 @@ func (api *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash commo
 				}
 			}
 		}
+		// }
 
 		// Make sure indexer is done.
 		if !api.b.TxIndexDone() {
 			return nil, NewTxIndexingError()
 		}
+
 		// No such tx.
 		return nil, nil
 	}

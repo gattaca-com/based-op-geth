@@ -103,7 +103,6 @@ type Backend interface {
 
 	// Frags
 	GetUnsealedBlock() *types.UnsealedBlock
-	UnsealedAsLatest() bool
 
 	CurrentView() *filtermaps.ChainView
 	NewMatcherBackend() filtermaps.MatcherBackend

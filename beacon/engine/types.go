@@ -17,6 +17,7 @@
 package engine
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -26,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
 )
@@ -252,6 +254,10 @@ func ExecutableDataToBlock(data ExecutableData, versionedHashes []common.Hash, b
 		return nil, err
 	}
 	if block.Hash() != data.BlockHash {
+		// Log block and data as JSON
+		blockJSON, _ := json.Marshal(block.Header())
+		dataJSON, _ := json.Marshal(data)
+		log.Error("Blockhash mismatch in ExecutableDataToBlock", "blockHeader", string(blockJSON), "executableData", string(dataJSON))
 		return nil, fmt.Errorf("blockhash mismatch, want %x, got %x", data.BlockHash, block.Hash())
 	}
 	return block, nil

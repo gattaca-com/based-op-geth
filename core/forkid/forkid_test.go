@@ -370,11 +370,6 @@ func TestValidation(t *testing.T) {
 		// Local is mainnet Shanghai, remote is random Shanghai.
 		{params.MainnetChainConfig, 20000000, 1681338455, ID{Hash: checksumToBytes(0x12345678), Next: 0}, ErrLocalIncompatibleOrStale},
 
-		// Local is mainnet Prague, far in the future. Remote announces Gopherium (non existing fork)
-		// at some future timestamp 8888888888, for itself, but past block for local. Local is incompatible.
-		//
-		// This case detects non-upgraded nodes with majority hash power (typical Ropsten mess).
-		{params.MainnetChainConfig, 88888888, 8888888888, ID{Hash: checksumToBytes(0xc376cf8b), Next: 8888888888}, ErrLocalIncompatibleOrStale},
 		// Local is mainnet BPO2, far in the future. Remote announces Gopherium (non existing fork)
 		// at some future timestamp 8888888888, for itself, but past block for local. Local is incompatible.
 		//

@@ -584,6 +584,9 @@ func (hc *HeaderChain) setHead(headBlock uint64, headTime uint64, updateFn Updat
 		// OPStack addition
 		updateOptimismBlockMetrics(parent)
 
+		// OPStack addition
+		updateOptimismBlockMetrics(parent)
+
 		// If this is the first iteration, wipe any leftover data upwards too so
 		// we don't end up with dangling daps in the database
 		var nums []uint64

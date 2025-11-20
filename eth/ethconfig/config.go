@@ -161,7 +161,7 @@ type Config struct {
 
 	// RPCUnsealedAsLatest indicates whether RPC calls should consider the
 	// unsealed block as the latest block.
-	RPCUnsealedAsLatest bool
+	RPCUnsealedAsLatest bool `toml:",omitempty"`
 
 	// OverrideOsaka (TODO: remove after the fork)
 	OverrideOsaka *uint64 `toml:",omitempty"`

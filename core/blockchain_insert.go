@@ -201,7 +201,7 @@ func (bc *BlockChain) InsertNewFrag(frag types.Frag) error {
 		Nonce:            types.EncodeNonce(0),
 		BaseFee:          new(big.Int).SetUint64(currentUnsealedBlock.Env.Basefee),
 		WithdrawalsHash:  &types.EmptyWithdrawalsHash,
-		BlobGasUsed:      new(uint64),
+		BlobGasUsed:      &currentUnsealedBlock.CumulativeBlobGasUsed,
 		ExcessBlobGas:    new(uint64),
 		ParentBeaconRoot: &currentUnsealedBlock.Env.ParentBeaconBlockRoot,
 	}).WithBody(types.Body{
@@ -216,15 +216,17 @@ func (bc *BlockChain) InsertNewFrag(frag types.Frag) error {
 		return err
 	}
 
-	for _, receipt := range res.Receipts {
-		currentUnsealedBlock.CumulativeBlobGasUsed += receipt.BlobGasUsed
-	}
+	// blob txs are not supported, blobGasUsed is used for DA footprint instead
+	// for _, receipt := range res.Receipts {
+	// 	currentUnsealedBlock.CumulativeBlobGasUsed += receipt.BlobGasUsed
+	// }
 
 	currentUnsealedBlock.Frags = append(currentUnsealedBlock.Frags, frag)
 	currentUnsealedBlock.LastSequenceNumber = &frag.Seq
 	currentUnsealedBlock.Receipts = append(currentUnsealedBlock.Receipts, res.Receipts...)
 	currentUnsealedBlock.Logs = append(currentUnsealedBlock.Logs, res.Logs...)
 	currentUnsealedBlock.CumulativeGasUsed = res.GasUsed
+	currentUnsealedBlock.CumulativeBlobGasUsed += frag.BlobGasUsed
 
 	return nil
 }

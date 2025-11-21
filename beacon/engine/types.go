@@ -470,7 +470,7 @@ func SealBlock(bc *core.BlockChain, ub *types.UnsealedBlock) (*types.Block, erro
 		Nonce:            types.EncodeNonce(0),
 		BaseFee:          new(big.Int).SetUint64(ub.Env.Basefee),
 		WithdrawalsHash:  withDrawalsHash,
-		BlobGasUsed:      new(uint64),
+		BlobGasUsed:      &ub.CumulativeBlobGasUsed,
 		ExcessBlobGas:    new(uint64),
 		ParentBeaconRoot: &ub.Env.ParentBeaconBlockRoot,
 		RequestsHash:     requestsHash,
@@ -536,6 +536,7 @@ type Seal struct {
 	StateRoot        common.Hash `json:"stateRoot"`
 	WithdrawalsRoot  common.Hash `json:"withdrawalsRoot"`
 	BlockHash        common.Hash `json:"blockHash"`
+	BlobGasUsed      uint64      `json:"blobGasUsed"`
 }
 
 type SignedEnv struct {
